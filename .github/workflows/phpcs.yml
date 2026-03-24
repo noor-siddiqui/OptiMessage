@@ -18,9 +18,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run PHP CodeSniffer (10up)
-        uses: 10up/action-phpcs@v2
+        uses: 10up/wpcs-action@stable
         with:
           # Automatically uses WordPress coding standards
           standard: WordPress
           # Disables warnings (-n) to ensure your action doesn't fail purely over docblock syntax 
-          args: '-n --extensions=php --ignore=*/plugin-update-checker/*,*/vendor/*,*/node_modules/* .'
+          extra_args: '-n --extensions=php --ignore=*/plugin-update-checker/*,*/vendor/*,*/node_modules/* .'
