@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class DSN_Send_SMS {
 
+
 	public function __construct() {
 		add_action( 'dsn_render_send_sms_tab', array( $this, 'render' ) );
 		add_action( 'admin_init', array( $this, 'process_send_sms_actions' ) );
@@ -18,24 +19,24 @@ class DSN_Send_SMS {
 		$send_type = isset( $_GET['send_type'] ) ? sanitize_text_field( wp_unslash( $_GET['send_type'] ) ) : 'single';
 
 		?>
-		<h2><?php _e( 'Send SMS', 'desishad-sms-notifier' ); ?></h2>
+		<h2><?php esc_html_e( 'Send SMS', 'desishad-sms-notifier' ); ?></h2>
 
 		<h3 class="nav-tab-wrapper">
-			<a href="?page=dsn-settings&tab=send&send_type=single" class="nav-tab <?php echo $send_type === 'single' ? 'nav-tab-active' : ''; ?>"><?php _e( 'Single SMS', 'desishad-sms-notifier' ); ?></a>
-			<a href="?page=dsn-settings&tab=send&send_type=bulk_csv" class="nav-tab <?php echo $send_type === 'bulk_csv' ? 'nav-tab-active' : ''; ?>"><?php _e( 'Bulk (CSV Upload)', 'desishad-sms-notifier' ); ?></a>
-			<a href="?page=dsn-settings&tab=send&send_type=bulk_filter" class="nav-tab <?php echo $send_type === 'bulk_filter' ? 'nav-tab-active' : ''; ?>"><?php _e( 'Bulk (Product/Role Filter)', 'desishad-sms-notifier' ); ?></a>
+			<a href="?page=dsn-settings&tab=send&send_type=single" class="nav-tab <?php echo $send_type === 'single' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Single SMS', 'desishad-sms-notifier' ); ?></a>
+			<a href="?page=dsn-settings&tab=send&send_type=bulk_csv" class="nav-tab <?php echo $send_type === 'bulk_csv' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Bulk (CSV Upload)', 'desishad-sms-notifier' ); ?></a>
+			<a href="?page=dsn-settings&tab=send&send_type=bulk_filter" class="nav-tab <?php echo $send_type === 'bulk_filter' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Bulk (Product/Role Filter)', 'desishad-sms-notifier' ); ?></a>
 		</h3>
 
 		<div class="wrap" style="margin-top: 20px;">
-			<?php
-			if ( $send_type === 'single' ) {
-				$this->render_single_sms_form();
-			} elseif ( $send_type === 'bulk_csv' ) {
-				$this->render_bulk_csv_form();
-			} elseif ( $send_type === 'bulk_filter' ) {
-				$this->render_bulk_filter_form();
-			}
-			?>
+		<?php
+		if ( $send_type === 'single' ) {
+			$this->render_single_sms_form();
+		} elseif ( $send_type === 'bulk_csv' ) {
+			$this->render_bulk_csv_form();
+		} elseif ( $send_type === 'bulk_filter' ) {
+			$this->render_bulk_filter_form();
+		}
+		?>
 		</div>
 		<?php
 	}
@@ -43,75 +44,89 @@ class DSN_Send_SMS {
 	private function render_single_sms_form() {
 		?>
 		<form method="post" action="">
-			<?php wp_nonce_field( 'dsn_send_single_sms', 'dsn_nonce' ); ?>
+		<?php wp_nonce_field( 'dsn_send_single_sms', 'dsn_nonce' ); ?>
 			<input type="hidden" name="dsn_action" value="send_single" />
 			<table class="form-table">
 				<tr valign="top">
-					<th scope="row"><?php _e( 'Phone Number (With Country Code)', 'desishad-sms-notifier' ); ?></th>
+					<th scope="row"><?php esc_html_e( 'Phone Number (With Country Code)', 'desishad-sms-notifier' ); ?></th>
 					<td><input type="text" name="phone_number" class="regular-text" required placeholder="+1234567890" /></td>
 				</tr>
 				<tr valign="top">
-					<th scope="row"><?php _e( 'Message', 'desishad-sms-notifier' ); ?></th>
+					<th scope="row"><?php esc_html_e( 'Message', 'desishad-sms-notifier' ); ?></th>
 					<td>
 						<textarea name="message" rows="5" class="large-text" required></textarea>
-						<br><span class="description"><?php _e( 'Enter your message here.', 'desishad-sms-notifier' ); ?></span>
+						<br><span class="description"><?php esc_html_e( 'Enter your message here.', 'desishad-sms-notifier' ); ?></span>
 					</td>
 				</tr>
 			</table>
-			<?php submit_button( __( 'Send Single SMS', 'desishad-sms-notifier' ) ); ?>
+		<?php submit_button( esc_html__( 'Send Single SMS', 'desishad-sms-notifier' ) ); ?>
 		</form>
 		<?php
 	}
 
 	private function render_bulk_csv_form() {
 		?>
-		<p><?php _e( 'Upload a CSV file containing phone numbers in the first column.', 'desishad-sms-notifier' ); ?></p>
+		<p><?php esc_html_e( 'Upload a CSV file containing phone numbers in the first column.', 'desishad-sms-notifier' ); ?></p>
 		<form method="post" action="" enctype="multipart/form-data">
-			<?php wp_nonce_field( 'dsn_send_bulk_csv', 'dsn_nonce' ); ?>
+		<?php wp_nonce_field( 'dsn_send_bulk_csv', 'dsn_nonce' ); ?>
 			<input type="hidden" name="dsn_action" value="send_bulk_csv" />
 			<table class="form-table">
 				<tr valign="top">
-					<th scope="row"><?php _e( 'CSV File', 'desishad-sms-notifier' ); ?></th>
+					<th scope="row"><?php esc_html_e( 'CSV File', 'desishad-sms-notifier' ); ?></th>
 					<td><input type="file" name="csv_file" accept=".csv" required /></td>
 				</tr>
 				<tr valign="top">
-					<th scope="row"><?php _e( 'Message', 'desishad-sms-notifier' ); ?></th>
+					<th scope="row"><?php esc_html_e( 'Message', 'desishad-sms-notifier' ); ?></th>
 					<td>
 						<textarea name="message" rows="5" class="large-text" required></textarea>
 					</td>
 				</tr>
 			</table>
-			<?php submit_button( __( 'Send to CSV Numbers', 'desishad-sms-notifier' ) ); ?>
+		<?php submit_button( esc_html__( 'Send to CSV Numbers', 'desishad-sms-notifier' ) ); ?>
 		</form>
 		<?php
 	}
 
 	private function render_bulk_filter_form() {
 		// Fetch simple product list for dropdown (this can be optimized for larger stores)
-		$products = wc_get_products( array( 'limit' => -1, 'status' => 'publish' ) );
+		$products = wc_get_products(
+			array(
+				'limit'  => -1,
+				'status' => 'publish',
+			)
+		);
 
 		// Calculate unique customers natively. Cached to prevent slowdowns.
 		$is_no_consent_allowed = get_option( 'dsn_send_no_consent', 0 );
-		$cache_key = 'dsn_bulk_counts_' . ( $is_no_consent_allowed ? 'all' : 'consent' );
-		$map = get_transient( $cache_key );
+		$cache_key             = 'dsn_bulk_counts_' . ( $is_no_consent_allowed ? 'all' : 'consent' );
+		$map                   = get_transient( $cache_key );
 		if ( false === $map ) {
-			$map = array( 'all' => array(), 'products' => array() );
-			$orders = wc_get_orders( array(
-				'status' => array( 'wc-processing', 'wc-completed' ),
-				'limit'  => -1,
-			) );
+			$map    = array(
+				'all'      => array(),
+				'products' => array(),
+			);
+			$orders = wc_get_orders(
+				array(
+					'status' => array( 'wc-processing', 'wc-completed' ),
+					'limit'  => -1,
+				)
+			);
 
 			if ( $orders ) {
 				foreach ( $orders as $order ) {
 					$phone = $order->get_billing_phone();
-					if ( empty( $phone ) ) continue;
+					if ( empty( $phone ) ) {
+						continue;
+					}
 
 					// Skip invalid phone numbers
-					if ( $order->get_meta( '_dsn_phone_valid' ) === '-1' ) continue;
+					if ( $order->get_meta( '_dsn_phone_valid' ) === '-1' ) {
+						continue;
+					}
 
 					// Check consent logic to accurately predict who gets the SMS
 					if ( ! $is_no_consent_allowed ) {
-						$has_consent = false;
+						$has_consent   = false;
 						$order_consent = $order->get_meta( '_wc_other/dsn/sms_consent' );
 						if ( $order_consent === '' || $order_consent === null ) {
 							$order_consent = $order->get_meta( 'dsn/sms_consent' );
@@ -128,26 +143,26 @@ class DSN_Send_SMS {
 							$customer_id = $order->get_customer_id();
 							if ( $customer_id ) {
 								$user_consent = get_user_meta( $customer_id, 'desishad/sms-consent', true );
-								if ( ! empty( $user_consent ) && ( $user_consent == '1' || strtolower( $user_consent ) === 'yes' || strtolower( $user_consent ) === 'on' || strtolower($user_consent) === 'true') ) {
+								if ( ! empty( $user_consent ) && ( $user_consent == '1' || strtolower( $user_consent ) === 'yes' || strtolower( $user_consent ) === 'on' || strtolower( $user_consent ) === 'true' ) ) {
 									$has_consent = true;
 								}
 							}
 						}
-						
+
 						if ( ! $has_consent ) {
-							continue;
+								continue;
 						}
 					}
 
 					// Track unique phone numbers
-					$map['all'][$phone] = true;
+					$map['all'][ $phone ] = true;
 
 					foreach ( $order->get_items() as $item ) {
 						$pid = $item->get_product_id();
-						if ( ! isset( $map['products'][$pid] ) ) {
-							$map['products'][$pid] = array();
+						if ( ! isset( $map['products'][ $pid ] ) ) {
+							$map['products'][ $pid ] = array();
 						}
-						$map['products'][$pid][$phone] = true;
+						$map['products'][ $pid ][ $phone ] = true;
 					}
 				}
 			}
@@ -156,59 +171,88 @@ class DSN_Send_SMS {
 
 		$all_count = isset( $map['all'] ) ? count( $map['all'] ) : 0;
 		?>
-		<p><?php _e( 'Send a message to customers based on past purchases.', 'desishad-sms-notifier' ); ?></p>
-		<p class="description"><?php _e( 'Only sends to users who have given consent via the desishad/sms-consent field (unless the "Send SMS to Users Without Consent" option is enabled in General Settings) AND have a valid billing phone number.', 'desishad-sms-notifier' ); ?></p>
+		<p><?php esc_html_e( 'Send a message to customers based on past purchases.', 'desishad-sms-notifier' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Only sends to users who have given consent via the desishad/sms-consent field (unless the "Send SMS to Users Without Consent" option is enabled in General Settings) AND have a valid billing phone number.', 'desishad-sms-notifier' ); ?></p>
 		<form method="post" action="">
-			<?php wp_nonce_field( 'dsn_send_bulk_filter', 'dsn_nonce' ); ?>
+		<?php wp_nonce_field( 'dsn_send_bulk_filter', 'dsn_nonce' ); ?>
 			<input type="hidden" name="dsn_action" value="send_bulk_filter" />
 			<table class="form-table">
 				<tr valign="top">
-					<th scope="row"><?php _e( 'Purchased Product', 'desishad-sms-notifier' ); ?></th>
+					<th scope="row"><?php esc_html_e( 'Purchased Product', 'desishad-sms-notifier' ); ?></th>
 					<td>
 						<select name="product_id">
-							<option value="all"><?php printf( __( 'Any Product (%d customers)', 'desishad-sms-notifier' ), $all_count ); ?></option>
-							<?php foreach ( $products as $product ) : 
-								$pid = $product->get_id();
-								$p_count = isset( $map['products'][$pid] ) ? count( $map['products'][$pid] ) : 0;
-							?>
-								<option value="<?php echo esc_attr( $pid ); ?>"><?php echo esc_html( $product->get_name() ) . sprintf( ' (%d customers)', $p_count ); ?></option>
-							<?php endforeach; ?>
+							<option value="all">
+								<?php
+								printf(
+									/* translators: %d: number of customers */
+									esc_html__( 'Any Product (%d customers)', 'desishad-sms-notifier' ),
+									(int) $all_count
+								);
+								?>
+							</option>
+		<?php
+		foreach ( $products as $product ) :
+			$pid     = $product->get_id();
+			$p_count = isset( $map['products'][ $pid ] ) ? count( $map['products'][ $pid ] ) : 0;
+			?>
+								<option value="<?php echo esc_attr( $pid ); ?>"><?php echo esc_html( $product->get_name() ) . sprintf( ' (%d customers)', (int) $p_count ); ?></option>
+		<?php endforeach; ?>
 						</select>
 					</td>
 				</tr>
 				<tr valign="top">
-					<th scope="row"><?php _e( 'Message', 'desishad-sms-notifier' ); ?></th>
+					<th scope="row"><?php esc_html_e( 'Message', 'desishad-sms-notifier' ); ?></th>
 					<td>
 						<textarea name="message" rows="5" class="large-text" required></textarea>
 					</td>
 				</tr>
 			</table>
-			<?php submit_button( __( 'Send Filtered SMS', 'desishad-sms-notifier' ) ); ?>
+		<?php submit_button( esc_html__( 'Send Filtered SMS', 'desishad-sms-notifier' ) ); ?>
 		</form>
 		<?php
 	}
 
 	public function process_send_sms_actions() {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( ! isset( $_POST['dsn_action'] ) ) {
 			return;
 		}
 
-		$action = sanitize_text_field( $_POST['dsn_action'] );
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$action = sanitize_text_field( wp_unslash( $_POST['dsn_action'] ) );
 
-		if ( $action === 'send_single' && wp_verify_nonce( $_POST['dsn_nonce'], 'dsn_send_single_sms' ) ) {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		if ( ! isset( $_POST['dsn_nonce'] ) ) {
+			return;
+		}
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$nonce = sanitize_text_field( wp_unslash( $_POST['dsn_nonce'] ) );
+
+		if ( $action === 'send_single' && wp_verify_nonce( $nonce, 'dsn_send_single_sms' ) ) {
 			$this->handle_single_sms();
-		} elseif ( $action === 'send_bulk_csv' && wp_verify_nonce( $_POST['dsn_nonce'], 'dsn_send_bulk_csv' ) ) {
+		} elseif ( $action === 'send_bulk_csv' && wp_verify_nonce( $nonce, 'dsn_send_bulk_csv' ) ) {
 			$this->handle_bulk_csv();
-		} elseif ( $action === 'send_bulk_filter' && wp_verify_nonce( $_POST['dsn_nonce'], 'dsn_send_bulk_filter' ) ) {
+		} elseif ( $action === 'send_bulk_filter' && wp_verify_nonce( $nonce, 'dsn_send_bulk_filter' ) ) {
 			$this->handle_bulk_filter();
 		}
 
-		wp_safe_redirect( add_query_arg( array( 'page' => 'dsn-settings', 'tab' => 'history' ), admin_url( 'admin.php' ) ) );
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page' => 'dsn-settings',
+					'tab'  => 'history',
+				),
+				admin_url( 'admin.php' )
+			)
+		);
 		exit;
 	}
 
 	private function handle_single_sms() {
-		$to      = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$to = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
 		if ( $to && $message ) {
@@ -217,9 +261,12 @@ class DSN_Send_SMS {
 	}
 
 	private function handle_bulk_csv() {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
 		if ( ! empty( $_FILES['csv_file']['tmp_name'] ) && $message ) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
 			$file = fopen( $_FILES['csv_file']['tmp_name'], 'r' );
 			if ( $file ) {
 				while ( ( $row = fgetcsv( $file ) ) !== false ) {
@@ -234,17 +281,21 @@ class DSN_Send_SMS {
 	}
 
 	private function handle_bulk_filter() {
-		$product_id = isset( $_POST['product_id'] ) ? sanitize_text_field( $_POST['product_id'] ) : 'all';
-		$message    = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$product_id = isset( $_POST['product_id'] ) ? sanitize_text_field( wp_unslash( $_POST['product_id'] ) ) : 'all';
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
 		if ( empty( $message ) ) {
 			return;
 		}
 
-		$orders = wc_get_orders( array(
-			'status' => array( 'wc-processing', 'wc-completed' ),
-			'limit'  => -1,
-		) );
+		$orders = wc_get_orders(
+			array(
+				'status' => array( 'wc-processing', 'wc-completed' ),
+				'limit'  => -1,
+			)
+		);
 
 		if ( ! $orders ) {
 			return;
@@ -284,7 +335,7 @@ class DSN_Send_SMS {
 			}
 
 			// Check consent (handles both registered users and guest orders)
-			$has_consent = false;
+			$has_consent   = false;
 			$order_consent = $order->get_meta( '_wc_other/dsn/sms_consent' );
 			if ( $order_consent === '' || $order_consent === null ) {
 				$order_consent = $order->get_meta( 'dsn/sms_consent' );
@@ -301,12 +352,12 @@ class DSN_Send_SMS {
 				$customer_id = $order->get_customer_id();
 				if ( $customer_id ) {
 					$user_consent = get_user_meta( $customer_id, 'desishad/sms-consent', true );
-					if ( ! empty( $user_consent ) && ( $user_consent == '1' || strtolower( $user_consent ) === 'yes' || strtolower( $user_consent ) === 'on' || strtolower($user_consent) === 'true') ) {
+					if ( ! empty( $user_consent ) && ( $user_consent == '1' || strtolower( $user_consent ) === 'yes' || strtolower( $user_consent ) === 'on' || strtolower( $user_consent ) === 'true' ) ) {
 						$has_consent = true;
 					}
 				}
 			}
-			
+
 			// If settings allow sending to no-consent users, bypass the consent check
 			if ( get_option( 'dsn_send_no_consent', 0 ) || $has_consent ) {
 				$sent_phones[ $phone ] = true;

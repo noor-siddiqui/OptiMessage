@@ -9,16 +9,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class DSN_Webhook {
 
+
 	public function __construct() {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 	}
 
 	public function register_routes() {
-		register_rest_route( 'dsn/v1', '/twilio-webhook', array(
-			'methods'             => 'POST',
-			'callback'            => array( $this, 'handle_webhook' ),
-			'permission_callback' => '__return_true', // Twilio hits this publicly
-		) );
+		register_rest_route(
+			'dsn/v1',
+			'/twilio-webhook',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'handle_webhook' ),
+				'permission_callback' => '__return_true', // Twilio hits this publicly
+			)
+		);
 	}
 
 	public function handle_webhook( WP_REST_Request $request ) {

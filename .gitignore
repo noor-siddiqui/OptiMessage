@@ -19,5 +19,5 @@ Thumbs.db
 *.log
 
 # Composer/NPM (Uncomment if used in the future)
-# vendor/
-# node_modules/
+vendor/
+node_modules/

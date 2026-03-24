@@ -18,6 +18,7 @@ define( 'DSN_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 // Setup plugin class
 class Desishad_SMS_Notifier {
 
+
 	/**
 	 * Single instance of the class
 	 */
@@ -45,14 +46,14 @@ class Desishad_SMS_Notifier {
 	 * Include required files
 	 */
 	private function includes() {
-		require_once DSN_PLUGIN_DIR . 'includes/class-dsn-settings.php';
-		require_once DSN_PLUGIN_DIR . 'includes/class-dsn-send-sms.php';
-		require_once DSN_PLUGIN_DIR . 'includes/class-dsn-twilio-api.php';
-		require_once DSN_PLUGIN_DIR . 'includes/class-dsn-history.php';
-		require_once DSN_PLUGIN_DIR . 'includes/class-dsn-woocommerce.php';
-		require_once DSN_PLUGIN_DIR . 'includes/class-dsn-user-profile.php';
-		require_once DSN_PLUGIN_DIR . 'includes/class-dsn-webhook.php';
-		require_once DSN_PLUGIN_DIR . 'includes/class-dsn-subscribers-table.php';
+		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-settings.php';
+		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-send-sms.php';
+		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-twilio-api.php';
+		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-history.php';
+		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-woocommerce.php';
+		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-user-profile.php';
+		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-webhook.php';
+		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-subscribers-table.php';
 	}
 
 	/**
@@ -61,10 +62,10 @@ class Desishad_SMS_Notifier {
 	private function init_hooks() {
 		// Run DB creation automatically if version is mismatched (fixes live server updates without reactivation)
 		add_action( 'admin_init', array( $this, 'check_db_update' ) );
-		
+
 		// Load plugin text domain for translations
 		add_action( 'init', array( $this, 'load_textdomain' ) );
-		
+
 		// Admin notices
 		add_action( 'admin_notices', array( $this, 'admin_setup_notice' ) );
 	}
@@ -86,13 +87,13 @@ class Desishad_SMS_Notifier {
 			<div class="notice notice-warning is-dismissible">
 				<p>
 					<strong><?php esc_html_e( 'OptiMessage is almost ready!', 'desishad-sms-notifier' ); ?></strong>
-					<?php
-					printf(
-						/* translators: %s: Settings page URL */
-						wp_kses_post( __( 'Please <a href="%s">configure your Twilio API credentials</a> to start sending SMS notifications.', 'desishad-sms-notifier' ) ),
-						esc_url( $settings_url )
-					);
-					?>
+			<?php
+			printf(
+			/* translators: %s: Settings page URL */
+				wp_kses_post( __( 'Please <a href="%s">configure your Twilio API credentials</a> to start sending SMS notifications.', 'desishad-sms-notifier' ) ),
+				esc_url( $settings_url )
+			);
+			?>
 				</p>
 			</div>
 			<?php
@@ -112,7 +113,7 @@ class Desishad_SMS_Notifier {
 	public static function install() {
 		global $wpdb;
 
-		$table_name = $wpdb->prefix . 'dsn_sms_history';
+		$table_name      = $wpdb->prefix . 'dsn_sms_history';
 		$charset_collate = $wpdb->get_charset_collate();
 
 		$sql = "CREATE TABLE $table_name (
@@ -128,7 +129,7 @@ class Desishad_SMS_Notifier {
 			PRIMARY KEY  (id)
 		) $charset_collate;";
 
-		require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+		include_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
 	}
 }
@@ -144,8 +145,8 @@ add_action( 'plugins_loaded', 'dsn_init' );
 
 // Setup automatic plugin updates using Plugin Update Checker (PUC)
 if ( file_exists( DSN_PLUGIN_DIR . 'plugin-update-checker/plugin-update-checker.php' ) ) {
-	require_once DSN_PLUGIN_DIR . 'plugin-update-checker/plugin-update-checker.php';
-	
+	include_once DSN_PLUGIN_DIR . 'plugin-update-checker/plugin-update-checker.php';
+
 	try {
 		// NOTE: Change 'your-repo-name' to the exact name of your GitHub repository.
 		$myUpdateChecker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
@@ -156,7 +157,7 @@ if ( file_exists( DSN_PLUGIN_DIR . 'plugin-update-checker/plugin-update-checker.
 
 		// Specify the branch to pull the stable release from
 		$myUpdateChecker->setBranch( 'main' );
-		
+
 		// If you make the repository Private, uncomment the line below and add your GitHub Personal Access Token
 		// $myUpdateChecker->setAuthentication('YOUR_GITHUB_PERSONAL_ACCESS_TOKEN');
 	} catch ( \Exception $e ) {

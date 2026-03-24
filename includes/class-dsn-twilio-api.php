@@ -9,13 +9,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class DSN_Twilio_API {
 
+
 	/**
 	 * Send SMS via Twilio and log to DB
 	 *
-	 * @param string $to
-	 * @param string $message
-	 * @param int $user_id
-	 * @param int $order_id
+	 * @param  string $to
+	 * @param  string $message
+	 * @param  int    $user_id
+	 * @param  int    $order_id
 	 * @return bool True on success, false on failure
 	 */
 	public static function send_sms( $to, $message, $user_id = 0, $order_id = 0 ) {
@@ -34,19 +35,19 @@ class DSN_Twilio_API {
 			$to_clean = '+' . $to_clean;
 		}
 
-		$url = "https://api.twilio.com/2010-04-01/Accounts/$sid/Messages.json";
+		$url         = "https://api.twilio.com/2010-04-01/Accounts/$sid/Messages.json";
 		$webhook_url = rest_url( 'dsn/v1/twilio-webhook' );
-		
+
 		$args = array(
 			'method'  => 'POST',
 			'headers' => array(
-				'Authorization' => 'Basic ' . base64_encode( "$sid:$token" )
+				'Authorization' => 'Basic ' . base64_encode( "$sid:$token" ),
 			),
 			'body'    => array(
-				'To'             => $to_clean,
-				'Body'           => $message,
+				'To'   => $to_clean,
+				'Body' => $message,
 			),
-			'timeout' => 15
+			'timeout' => 15,
 		);
 
 		// Only attach webhook if it's not a local unroutable domain (which Twilio rejects with 400)
@@ -59,7 +60,7 @@ class DSN_Twilio_API {
 		} else {
 			$args['body']['From'] = trim( $from );
 		}
-		
+
 		$response = wp_remote_post( $url, $args );
 
 		if ( is_wp_error( $response ) ) {
@@ -84,7 +85,7 @@ class DSN_Twilio_API {
 
 		$message_sid = isset( $data->sid ) ? sanitize_text_field( $data->sid ) : '';
 		$status      = isset( $data->status ) ? sanitize_text_field( $data->status ) : 'unknown';
-		
+
 		if ( in_array( $status, array( 'queued', 'sent', 'delivered' ) ) ) {
 			self::log_sms( $to_clean, $message_sid, $message, $status, $user_id, $order_id, '' );
 			return true;
@@ -120,8 +121,8 @@ class DSN_Twilio_API {
 	/**
 	 * Verify phone number via Twilio Lookup v2
 	 *
-	 * @param string $phone
-	 * @param string $country_code (Optional) ISO Country Code (e.g. US, BD)
+	 * @param  string $phone
+	 * @param  string $country_code (Optional) ISO Country Code (e.g. US, BD)
 	 * @return array|bool Array with 'formatted' and 'valid', or false on API error.
 	 */
 	public static function lookup_phone( $phone, $country_code = '' ) {
@@ -133,33 +134,33 @@ class DSN_Twilio_API {
 		}
 
 		$clean_phone = trim( $phone );
-		$has_plus = str_starts_with( $clean_phone, '+' );
-		
+		$has_plus    = str_starts_with( $clean_phone, '+' );
+
 		// Remove all non-numeric characters
 		$numbers_only = preg_replace( '/[^0-9]/', '', $clean_phone );
 
 		if ( $has_plus ) {
 			$lookup_number = '+' . $numbers_only;
-			$url = "https://lookups.twilio.com/v2/PhoneNumbers/" . urlencode( $lookup_number );
+			$url           = 'https://lookups.twilio.com/v2/PhoneNumbers/' . urlencode( $lookup_number );
 		} else {
 			$lookup_number = $numbers_only; // National format
-			$url = "https://lookups.twilio.com/v2/PhoneNumbers/" . urlencode( $lookup_number );
-			
+			$url           = 'https://lookups.twilio.com/v2/PhoneNumbers/' . urlencode( $lookup_number );
+
 			if ( ! empty( $country_code ) ) {
 				$url = add_query_arg( 'CountryCode', strtoupper( sanitize_text_field( $country_code ) ), $url );
 			} else {
 				// Fallback to legacy behavior if country code is completely missing
 				$lookup_number = '+' . $numbers_only;
-				$url = "https://lookups.twilio.com/v2/PhoneNumbers/" . urlencode( $lookup_number );
+				$url           = 'https://lookups.twilio.com/v2/PhoneNumbers/' . urlencode( $lookup_number );
 			}
 		}
 
 		$args = array(
 			'method'  => 'GET',
 			'headers' => array(
-				'Authorization' => 'Basic ' . base64_encode( "$sid:$token" )
+				'Authorization' => 'Basic ' . base64_encode( "$sid:$token" ),
 			),
-			'timeout' => 15
+			'timeout' => 15,
 		);
 
 		$response = wp_remote_get( $url, $args );
@@ -174,7 +175,7 @@ class DSN_Twilio_API {
 		if ( isset( $data->valid ) ) {
 			return array(
 				'valid'     => (bool) $data->valid,
-				'formatted' => isset( $data->phone_number ) ? $data->phone_number : $lookup_number
+				'formatted' => isset( $data->phone_number ) ? $data->phone_number : $lookup_number,
 			);
 		}
 
@@ -182,7 +183,7 @@ class DSN_Twilio_API {
 		if ( isset( $data->code ) ) {
 			return array(
 				'valid'     => false,
-				'formatted' => $lookup_number
+				'formatted' => $lookup_number,
 			);
 		}
 
