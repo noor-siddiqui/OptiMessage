@@ -28,9 +28,9 @@ class DSN_Settings {
 
 	public function register_settings() {
 		// Twilio API Settings
-		register_setting( 'dsn_api_group', 'dsn_twilio_sid' );
-		register_setting( 'dsn_api_group', 'dsn_twilio_token' );
-		register_setting( 'dsn_api_group', 'dsn_twilio_from' );
+		register_setting( 'dsn_api_group', 'dsn_twilio_sid', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'dsn_api_group', 'dsn_twilio_token', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'dsn_api_group', 'dsn_twilio_from', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 
 		// General/Consent Settings
 		register_setting( 'dsn_general_group', 'dsn_wc_sms_enabled', array( 'type' => 'boolean', 'default' => 1 ) );
@@ -42,9 +42,9 @@ class DSN_Settings {
 		register_setting( 'dsn_general_group', 'dsn_track_url_key', array( 'type' => 'string', 'default' => '_tracking_url' ) );
 
 		// Template Settings
-		register_setting( 'dsn_templates_group', 'dsn_tpl_placed' );
-		register_setting( 'dsn_templates_group', 'dsn_tpl_completed' );
-		register_setting( 'dsn_templates_group', 'dsn_tpl_refunded' );
+		register_setting( 'dsn_templates_group', 'dsn_tpl_placed', array( 'sanitize_callback' => 'wp_kses_post' ) );
+		register_setting( 'dsn_templates_group', 'dsn_tpl_completed', array( 'sanitize_callback' => 'wp_kses_post' ) );
+		register_setting( 'dsn_templates_group', 'dsn_tpl_refunded', array( 'sanitize_callback' => 'wp_kses_post' ) );
 	}
 
 	public function render_settings_page() {

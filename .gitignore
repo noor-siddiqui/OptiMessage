@@ -1,0 +1,23 @@
+# Editors and IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS Logs and Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build artifacts
+*.zip
+*.tar.gz
+*.log
+
+# Composer/NPM (Uncomment if used in the future)
+# vendor/
+# node_modules/
