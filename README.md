@@ -4,6 +4,11 @@
   <strong>A Powerful, Open-Source SMS Notification and Bulk Marketing Framework for WooCommerce.</strong>
 </p>
 
+<p align="center">
+<a href="https://github.com/noor-siddiqui/OptiMessage/actions/workflows/release.yml"><img src="https://github.com/noor-siddiqui/OptiMessage/actions/workflows/release.yml/badge.svg" alt="Build Status"></a>
+<a href="https://github.com/noor-siddiqui/OptiMessage/actions/workflows/phpcs.yml"><img src="https://github.com/noor-siddiqui/OptiMessage/actions/workflows/phpcs.yml/badge.svg" alt="WordPress Coding Standards (WPCS)"></a>
+</p>
+
 ## 🚀 Overview
 
 **OptiMessage** integrates your WooCommerce store with Twilio to ensure your customers get real-time order updates via SMS, while empowering you with targeted, consent-based bulk SMS marketing tools that filter previous purchases effortlessly.
