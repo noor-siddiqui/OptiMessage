@@ -1,0 +1,33 @@
+name: Generate Plugin Release ZIP
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger this workflow when a new tag like "v1.0.0" is pushed
+
+jobs:
+  build:
+    name: Build & Attach Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to upload files to GitHub Releases
+      
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Create Build Directory
+      run: |
+        mkdir optiMessage
+        # Copy everything except development metadata
+        rsync -av --progress . optiMessage/ --exclude optiMessage --exclude .git --exclude .github --exclude .DS_Store
+      
+    - name: Generate Zip File
+      run: zip -r optiMessage.zip optiMessage
+
+    - name: Upload Release Asset
+      uses: softprops/action-gh-release@v1
+      with:
+        files: optiMessage.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

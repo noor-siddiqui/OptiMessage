@@ -61,6 +61,42 @@ class Desishad_SMS_Notifier {
 	private function init_hooks() {
 		// Run DB creation automatically if version is mismatched (fixes live server updates without reactivation)
 		add_action( 'admin_init', array( $this, 'check_db_update' ) );
+		
+		// Load plugin text domain for translations
+		add_action( 'init', array( $this, 'load_textdomain' ) );
+		
+		// Admin notices
+		add_action( 'admin_notices', array( $this, 'admin_setup_notice' ) );
+	}
+
+	/**
+	 * Load text domain
+	 */
+	public function load_textdomain() {
+		load_plugin_textdomain( 'desishad-sms-notifier', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+	}
+
+	/**
+	 * Admin setup notice
+	 */
+	public function admin_setup_notice() {
+		if ( ! get_option( 'dsn_twilio_sid' ) || ! get_option( 'dsn_twilio_token' ) ) {
+			$settings_url = admin_url( 'admin.php?page=dsn-settings&tab=api' );
+			?>
+			<div class="notice notice-warning is-dismissible">
+				<p>
+					<strong><?php esc_html_e( 'OptiMessage is almost ready!', 'desishad-sms-notifier' ); ?></strong>
+					<?php
+					printf(
+						/* translators: %s: Settings page URL */
+						wp_kses_post( __( 'Please <a href="%s">configure your Twilio API credentials</a> to start sending SMS notifications.', 'desishad-sms-notifier' ) ),
+						esc_url( $settings_url )
+					);
+					?>
+				</p>
+			</div>
+			<?php
+		}
 	}
 
 	public function check_db_update() {

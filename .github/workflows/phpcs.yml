@@ -1,0 +1,33 @@
+name: WordPress Coding Standards (WPCS)
+
+on:
+  push:
+    paths:
+      - '**.php'
+  pull_request:
+    paths:
+      - '**.php'
+
+jobs:
+  lint:
+    name: PHP CodeSniffer Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP and WPCS
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          coverage: none
+          # This automatically installs PHP CodeSniffer and the WordPress Coding Standards
+          tools: phpcs, wpcs
+
+      - name: Run PHP CodeSniffer
+        run: |
+          # Checks all PHP files against strictly documented WordPress standards.
+          # We ignore 'plugin-update-checker' since it is a third-party library.
+          # 'ignore_warnings_on_exit 1' ensures the pipeline only fails for critical errors, not warnings.
+          phpcs --standard=WordPress --extensions=php --runtime-set ignore_warnings_on_exit 1 --ignore=*/plugin-update-checker/*,*/vendor/*,*/node_modules/* .
