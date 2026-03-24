@@ -17,10 +17,21 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Run PHP CodeSniffer (10up)
-        uses: 10up/wpcs-action@stable
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          # Automatically uses WordPress coding standards
-          standard: WordPress
-          # Disables warnings (-n) to ensure your action doesn't fail purely over docblock syntax 
-          extra_args: '-n --extensions=php --ignore=*/plugin-update-checker/*,*/vendor/*,*/node_modules/* .'
+          php-version: '8.1'
+          coverage: none
+          tools: composer
+
+      - name: Install WPCS via Composer
+        run: |
+          # 1. Allow the auto-installer to map WPCS into PHPCS
+          composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          
+          # 2. Install PHP_CodeSniffer, the WordPress Standard, and the Auto-installer
+          composer global require squizlabs/php_codesniffer wp-coding-standards/wpcs dealerdirect/phpcodesniffer-composer-installer
+
+      - name: Run PHP CodeSniffer
+        run: |
+          phpcs --standard=WordPress -n --extensions=php --ignore=*/plugin-update-checker/*,*/vendor/*,*/node_modules/* .
