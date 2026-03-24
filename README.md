@@ -1,6 +1,4 @@
-<center>
-<img src="OptiMessage.png" alt="OptiMessage" width="350" alt="OptiMessage Logo">
-</center>
+<p align="center"><img src="OptiMessage.png" alt="OptiMessage" width="400" alt="OptiMessage Logo">/p>
 
 <p align="center">
   <strong>A Powerful, Open-Source SMS Notification and Bulk Marketing Framework for WooCommerce.</strong>
