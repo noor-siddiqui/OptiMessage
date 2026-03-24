@@ -16,12 +16,12 @@ class DSN_Settings {
 
 	public function add_settings_page() {
 		add_menu_page(
-			__( 'SMS Notifier', 'desishad-sms-notifier' ),
-			__( 'SMS Notifier', 'desishad-sms-notifier' ),
+			__( 'OptiMessage', 'desishad-sms-notifier' ),
+			__( 'OptiMessage', 'desishad-sms-notifier' ),
 			'manage_options',
 			'dsn-settings',
 			array( $this, 'render_settings_page' ),
-			'dashicons-smartphone',
+			'data:image/svg+xml;base64,' . base64_encode( file_get_contents( DSN_PLUGIN_DIR . '/includes/icon.svg' ) ),
 			56
 		);
 	}
@@ -51,7 +51,7 @@ class DSN_Settings {
 		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'send';
 		?>
 		<div class="wrap">
-			<h1><?php _e( 'OptiMessage SMS Notifier Settings', 'desishad-sms-notifier' ); ?></h1>
+			<h1><?php _e( 'OptiMessage, Powerful SMS Notifier', 'desishad-sms-notifier' ); ?></h1>
 			<?php settings_errors(); ?>
 
 			<h2 class="nav-tab-wrapper">

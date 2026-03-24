@@ -1,4 +1,7 @@
-<h1 align="center">OptiMessage</h1>
+<center>
+<img src="OptiMessage.png" alt="OptiMessage" width="350" alt="OptiMessage Logo">
+</center>
+
 <p align="center">
   <strong>A Powerful, Open-Source SMS Notification and Bulk Marketing Framework for WooCommerce.</strong>
 </p>
@@ -41,6 +44,21 @@ Because OptiMessage is updated directly through GitHub, you can securely install
 
 Please note that Twilio cannot send Webhooks (Delivery Receipts) back to `.local` or `localhost` environments. To test the SMS History's delivery callbacks effectively, test the webhook functionality on a publicly accessible WordPress staging or production environment.
 
+## 🤝 Contributing
+
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 🔒 Security & Vulnerabilities
+
+If you discover any security-related issues or vulnerabilities within OptiMessage, please do not disclose them publicly via GitHub issues. Instead, please email the author directly or open a confidential security advisory on GitHub. All security vulnerabilities will be promptly addressed.
+
 ## 👨‍💻 Developer
 
 **Author:** Noor Nabiul Alam Siddiqui
+**Email:**  [siddiqui.sazal@gmail.com](mailto:siddiqui.sazal@gmail.com)

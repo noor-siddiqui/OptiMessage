@@ -2,16 +2,16 @@
 /**
  * Plugin Name: OptiMessage
  * Description: A powerful, open source SMS notification and bulk messaging framework scaling Twilio for WooCommerce.
- * Version: 1.0.0
+ * Version: 0.1.0_beta
  * Author: Noor Nabiul Alam Siddiqui
- * GitHub Plugin URI: https://github.com/NoorNabiul/desishad-sms-notifier
+ * GitHub Plugin URI: https://github.com/noor-siddiqui/OptiMessage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-define( 'DSN_VERSION', '1.0.0' );
+define( 'DSN_VERSION', '0.1.0_beta' );
 define( 'DSN_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DSN_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -113,9 +113,9 @@ if ( file_exists( DSN_PLUGIN_DIR . 'plugin-update-checker/plugin-update-checker.
 	try {
 		// NOTE: Change 'your-repo-name' to the exact name of your GitHub repository.
 		$myUpdateChecker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
-			'https://github.com/NoorNabiul/your-repo-name/',
+			'https://github.com/noor-siddiqui/OptiMessage',
 			__FILE__,
-			'desishad-sms-notifier'
+			'optiMessage'
 		);
 
 		// Specify the branch to pull the stable release from
