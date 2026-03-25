@@ -1,26 +1,23 @@
 <?php
 /**
- * Plugin Name: OptiMessage
- * Description: A powerful, open source SMS notification and bulk messaging framework scaling Twilio for WooCommerce.
- * Version: 0.1.0_beta
- * Author: Noor Nabiul Alam Siddiqui
- * GitHub Plugin URI: https://github.com/noor-siddiqui/OptiMessage
+ * Main plugin class.
+ *
+ * @package OptiMessage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-define( 'DSN_VERSION', '0.1.0_beta' );
-define( 'DSN_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'DSN_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-
-// Setup plugin class
-class Desishad_SMS_Notifier {
-
+/**
+ * Class OptiMessage
+ */
+class OptiMessage {
 
 	/**
-	 * Single instance of the class
+	 * Single instance of the class.
+	 *
+	 * @var OptiMessage|null
 	 */
 	private static $instance = null;
 
@@ -53,20 +50,17 @@ class Desishad_SMS_Notifier {
 		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-woocommerce.php';
 		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-user-profile.php';
 		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-webhook.php';
-		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-subscribers-table.php';
+		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-subscribers-list-table.php';
+		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-guest-customers-list-table.php';
+		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-subscribers-tab.php';
 	}
 
 	/**
-	 * Hook into actions and filters
+	 * Hook into actions and filters.
 	 */
 	private function init_hooks() {
-		// Run DB creation automatically if version is mismatched (fixes live server updates without reactivation)
 		add_action( 'admin_init', array( $this, 'check_db_update' ) );
-
-		// Load plugin text domain for translations
 		add_action( 'init', array( $this, 'load_textdomain' ) );
-
-		// Admin notices
 		add_action( 'admin_notices', array( $this, 'admin_setup_notice' ) );
 	}
 
@@ -74,7 +68,7 @@ class Desishad_SMS_Notifier {
 	 * Load text domain
 	 */
 	public function load_textdomain() {
-		load_plugin_textdomain( 'desishad-sms-notifier', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+		load_plugin_textdomain( 'desishad-sms-notifier', false, dirname( plugin_basename( DSN_PLUGIN_DIR . 'optimessage.php' ) ) . '/languages' );
 	}
 
 	/**
@@ -100,6 +94,9 @@ class Desishad_SMS_Notifier {
 		}
 	}
 
+	/**
+	 * Check if database update is required.
+	 */
 	public function check_db_update() {
 		if ( get_option( 'dsn_db_version' ) !== DSN_VERSION ) {
 			self::install();
@@ -117,50 +114,19 @@ class Desishad_SMS_Notifier {
 		$charset_collate = $wpdb->get_charset_collate();
 
 		$sql = "CREATE TABLE $table_name (
-			id mediumint(9) NOT NULL AUTO_INCREMENT,
-			phone_number varchar(20) NOT NULL,
-			message_sid varchar(50) DEFAULT '' NOT NULL,
-			message text NOT NULL,
-			status varchar(50) NOT NULL,
-			sent_at datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-			user_id bigint(20) DEFAULT 0,
-			order_id bigint(20) DEFAULT 0,
-			error_message text,
-			PRIMARY KEY  (id)
-		) $charset_collate;";
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            phone_number varchar(20) NOT NULL,
+            message_sid varchar(50) DEFAULT '' NOT NULL,
+            message text NOT NULL,
+            status varchar(50) NOT NULL,
+            sent_at datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+            user_id bigint(20) DEFAULT 0,
+            order_id bigint(20) DEFAULT 0,
+            error_message text,
+            PRIMARY KEY  (id)
+        ) $charset_collate;";
 
 		include_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
-	}
-}
-
-// Hook activation outside the instance class appropriately
-register_activation_hook( __FILE__, array( 'Desishad_SMS_Notifier', 'install' ) );
-
-// Initialize the plugin
-function dsn_init() {
-	return Desishad_SMS_Notifier::instance();
-}
-add_action( 'plugins_loaded', 'dsn_init' );
-
-// Setup automatic plugin updates using Plugin Update Checker (PUC)
-if ( file_exists( DSN_PLUGIN_DIR . 'plugin-update-checker/plugin-update-checker.php' ) ) {
-	include_once DSN_PLUGIN_DIR . 'plugin-update-checker/plugin-update-checker.php';
-
-	try {
-		// NOTE: Change 'your-repo-name' to the exact name of your GitHub repository.
-		$myUpdateChecker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
-			'https://github.com/noor-siddiqui/OptiMessage',
-			__FILE__,
-			'optiMessage'
-		);
-
-		// Specify the branch to pull the stable release from
-		$myUpdateChecker->setBranch( 'main' );
-
-		// If you make the repository Private, uncomment the line below and add your GitHub Personal Access Token
-		// $myUpdateChecker->setAuthentication('YOUR_GITHUB_PERSONAL_ACCESS_TOKEN');
-	} catch ( \Exception $e ) {
-		// Log gracefully without breaking the site if PUC fails
 	}
 }

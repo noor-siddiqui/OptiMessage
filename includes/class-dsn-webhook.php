@@ -1,19 +1,30 @@
 <?php
 /**
  * Webhook Handler for Twilio Delivery Status
+ *
+ * @package OptiMessage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class DSN_Webhook
+ * Handles incoming webhooks.
+ */
 class DSN_Webhook {
 
-
+	/**
+	 * Constructor.
+	 */
 	public function __construct() {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 	}
 
+	/**
+	 * Register REST routes.
+	 */
 	public function register_routes() {
 		register_rest_route(
 			'dsn/v1',
@@ -21,15 +32,21 @@ class DSN_Webhook {
 			array(
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'handle_webhook' ),
-				'permission_callback' => '__return_true', // Twilio hits this publicly
+				'permission_callback' => '__return_true', // Twilio hits this publicly.
 			)
 		);
 	}
 
+	/**
+	 * Handle webhook request.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response
+	 */
 	public function handle_webhook( WP_REST_Request $request ) {
 		global $wpdb;
 
-		// Twilio sends data as form-urlencoded POST body
+		// Twilio sends data as form-urlencoded POST body.
 		$params = $request->get_body_params();
 
 		$message_sid = isset( $params['MessageSid'] ) ? sanitize_text_field( $params['MessageSid'] ) : '';
@@ -38,10 +55,10 @@ class DSN_Webhook {
 		if ( ! empty( $message_sid ) && ! empty( $status ) ) {
 			$table_name = $wpdb->prefix . 'dsn_sms_history';
 
-			// Update the status in our history table
+			// Update the status in our history table.
 			$wpdb->update(
 				$table_name,
-				array( 'status' => $status ), // Twilio statuses: queued, failed, sent, delivered, undelivered
+				array( 'status' => $status ), // Twilio statuses: queued, failed, sent, delivered, undelivered.
 				array( 'message_sid' => $message_sid ),
 				array( '%s' ),
 				array( '%s' )

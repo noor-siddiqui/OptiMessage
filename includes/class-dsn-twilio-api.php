@@ -1,22 +1,28 @@
 <?php
 /**
  * Twilio API Handler for OptiMessage
+ *
+ * @package OptiMessage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class DSN_Twilio_API
+ * Handles SMS sending and Twilio API communication.
+ */
 class DSN_Twilio_API {
 
 
 	/**
 	 * Send SMS via Twilio and log to DB
 	 *
-	 * @param  string $to
-	 * @param  string $message
-	 * @param  int    $user_id
-	 * @param  int    $order_id
+	 * @param  string $to       The recipient phone number.
+	 * @param  string $message  The message text to send.
+	 * @param  int    $user_id  Optional user ID associated with SMS.
+	 * @param  int    $order_id Optional WooCommerce order ID.
 	 * @return bool True on success, false on failure
 	 */
 	public static function send_sms( $to, $message, $user_id = 0, $order_id = 0 ) {
@@ -29,7 +35,7 @@ class DSN_Twilio_API {
 			return false;
 		}
 
-		// Basic formatting: ensure $to has a '+' sign if it's purely numerical and longer than 10 digits
+		// Basic formatting: ensure $to has a '+' sign if it's purely numerical and longer than 10 digits.
 		$to_clean = preg_replace( '/[^0-9+]/', '', $to );
 		if ( ! str_starts_with( $to_clean, '+' ) ) {
 			$to_clean = '+' . $to_clean;
@@ -50,7 +56,7 @@ class DSN_Twilio_API {
 			'timeout' => 15,
 		);
 
-		// Only attach webhook if it's not a local unroutable domain (which Twilio rejects with 400)
+		// Only attach webhook if it's not a local unroutable domain (which Twilio rejects with 400).
 		if ( false === strpos( $webhook_url, 'localhost' ) && false === strpos( $webhook_url, '.local' ) ) {
 			$args['body']['StatusCallback'] = $webhook_url;
 		}
@@ -97,6 +103,14 @@ class DSN_Twilio_API {
 
 	/**
 	 * Log SMS to Database
+	 *
+	 * @param string $phone_number  The destination phone number.
+	 * @param string $message_sid   The Twilio message SID.
+	 * @param string $message       The message body.
+	 * @param string $status        The delivery status.
+	 * @param int    $user_id       The user ID.
+	 * @param int    $order_id      The order ID.
+	 * @param string $error_message Any API error message.
 	 */
 	private static function log_sms( $phone_number, $message_sid, $message, $status, $user_id, $order_id, $error_message ) {
 		global $wpdb;
@@ -121,8 +135,8 @@ class DSN_Twilio_API {
 	/**
 	 * Verify phone number via Twilio Lookup v2
 	 *
-	 * @param  string $phone
-	 * @param  string $country_code (Optional) ISO Country Code (e.g. US, BD)
+	 * @param  string $phone        Phone number to lookup.
+	 * @param  string $country_code (Optional) ISO Country Code (e.g. US, BD).
 	 * @return array|bool Array with 'formatted' and 'valid', or false on API error.
 	 */
 	public static function lookup_phone( $phone, $country_code = '' ) {
@@ -136,20 +150,20 @@ class DSN_Twilio_API {
 		$clean_phone = trim( $phone );
 		$has_plus    = str_starts_with( $clean_phone, '+' );
 
-		// Remove all non-numeric characters
+		// Remove all non-numeric characters.
 		$numbers_only = preg_replace( '/[^0-9]/', '', $clean_phone );
 
 		if ( $has_plus ) {
 			$lookup_number = '+' . $numbers_only;
 			$url           = 'https://lookups.twilio.com/v2/PhoneNumbers/' . urlencode( $lookup_number );
 		} else {
-			$lookup_number = $numbers_only; // National format
+			$lookup_number = $numbers_only; // National format.
 			$url           = 'https://lookups.twilio.com/v2/PhoneNumbers/' . urlencode( $lookup_number );
 
 			if ( ! empty( $country_code ) ) {
 				$url = add_query_arg( 'CountryCode', strtoupper( sanitize_text_field( $country_code ) ), $url );
 			} else {
-				// Fallback to legacy behavior if country code is completely missing
+				// Fallback to legacy behavior if country code is completely missing.
 				$lookup_number = '+' . $numbers_only;
 				$url           = 'https://lookups.twilio.com/v2/PhoneNumbers/' . urlencode( $lookup_number );
 			}
@@ -179,7 +193,7 @@ class DSN_Twilio_API {
 			);
 		}
 
-		// If returning an error object (like 404 Not Found due to invalid format)
+		// If returning an error object (like 404 Not Found due to invalid format).
 		if ( isset( $data->code ) ) {
 			return array(
 				'valid'     => false,

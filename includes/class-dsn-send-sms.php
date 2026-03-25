@@ -1,20 +1,31 @@
 <?php
 /**
- * Send SMS Interface for Desishad SMS Notifier
+ * Send SMS Interface for OptiMessage SMS Notifier
+ *
+ * @package OptiMessage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class DSN_Send_SMS
+ * Handles sending single and bulk SMS messages.
+ */
 class DSN_Send_SMS {
 
-
+	/**
+	 * Constructor.
+	 */
 	public function __construct() {
 		add_action( 'dsn_render_send_sms_tab', array( $this, 'render' ) );
 		add_action( 'admin_init', array( $this, 'process_send_sms_actions' ) );
 	}
 
+	/**
+	 * Render the send SMS page.
+	 */
 	public function render() {
 		$send_type = isset( $_GET['send_type'] ) ? sanitize_text_field( wp_unslash( $_GET['send_type'] ) ) : 'single';
 
@@ -22,18 +33,18 @@ class DSN_Send_SMS {
 		<h2><?php esc_html_e( 'Send SMS', 'desishad-sms-notifier' ); ?></h2>
 
 		<h3 class="nav-tab-wrapper">
-			<a href="?page=dsn-settings&tab=send&send_type=single" class="nav-tab <?php echo $send_type === 'single' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Single SMS', 'desishad-sms-notifier' ); ?></a>
-			<a href="?page=dsn-settings&tab=send&send_type=bulk_csv" class="nav-tab <?php echo $send_type === 'bulk_csv' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Bulk (CSV Upload)', 'desishad-sms-notifier' ); ?></a>
-			<a href="?page=dsn-settings&tab=send&send_type=bulk_filter" class="nav-tab <?php echo $send_type === 'bulk_filter' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Bulk (Product/Role Filter)', 'desishad-sms-notifier' ); ?></a>
+			<a href="?page=dsn-settings&tab=send&send_type=single" class="nav-tab <?php echo 'single' === $send_type ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Single SMS', 'desishad-sms-notifier' ); ?></a>
+			<a href="?page=dsn-settings&tab=send&send_type=bulk_csv" class="nav-tab <?php echo 'bulk_csv' === $send_type ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Bulk (CSV Upload)', 'desishad-sms-notifier' ); ?></a>
+			<a href="?page=dsn-settings&tab=send&send_type=bulk_filter" class="nav-tab <?php echo 'bulk_filter' === $send_type ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Bulk (Product/Role Filter)', 'desishad-sms-notifier' ); ?></a>
 		</h3>
 
 		<div class="wrap" style="margin-top: 20px;">
 		<?php
-		if ( $send_type === 'single' ) {
+		if ( 'single' === $send_type ) {
 			$this->render_single_sms_form();
-		} elseif ( $send_type === 'bulk_csv' ) {
+		} elseif ( 'bulk_csv' === $send_type ) {
 			$this->render_bulk_csv_form();
-		} elseif ( $send_type === 'bulk_filter' ) {
+		} elseif ( 'bulk_filter' === $send_type ) {
 			$this->render_bulk_filter_form();
 		}
 		?>
@@ -41,6 +52,9 @@ class DSN_Send_SMS {
 		<?php
 	}
 
+	/**
+	 * Render single SMS form.
+	 */
 	private function render_single_sms_form() {
 		?>
 		<form method="post" action="">
@@ -64,6 +78,9 @@ class DSN_Send_SMS {
 		<?php
 	}
 
+	/**
+	 * Render bulk CSV upload form.
+	 */
 	private function render_bulk_csv_form() {
 		?>
 		<p><?php esc_html_e( 'Upload a CSV file containing phone numbers in the first column.', 'desishad-sms-notifier' ); ?></p>
@@ -87,8 +104,11 @@ class DSN_Send_SMS {
 		<?php
 	}
 
+	/**
+	 * Render bulk filter form.
+	 */
 	private function render_bulk_filter_form() {
-		// Fetch simple product list for dropdown (this can be optimized for larger stores)
+		// Fetch simple product list for dropdown (this can be optimized for larger stores).
 		$products = wc_get_products(
 			array(
 				'limit'  => -1,
@@ -119,31 +139,31 @@ class DSN_Send_SMS {
 						continue;
 					}
 
-					// Skip invalid phone numbers
-					if ( $order->get_meta( '_dsn_phone_valid' ) === '-1' ) {
+					// Skip invalid phone numbers.
+					if ( '-1' === $order->get_meta( '_dsn_phone_valid' ) ) {
 						continue;
 					}
 
-					// Check consent logic to accurately predict who gets the SMS
+					// Check consent logic to accurately predict who gets the SMS.
 					if ( ! $is_no_consent_allowed ) {
 						$has_consent   = false;
 						$order_consent = $order->get_meta( '_wc_other/dsn/sms_consent' );
-						if ( $order_consent === '' || $order_consent === null ) {
+						if ( '' === $order_consent || null === $order_consent ) {
 							$order_consent = $order->get_meta( 'dsn/sms_consent' );
 						}
-						if ( $order_consent === '' || $order_consent === null ) {
+						if ( '' === $order_consent || null === $order_consent ) {
 							$order_consent = $order->get_meta( '_dsn_sms_consent' );
 						}
 
-						if ( $order_consent === true || $order_consent === '1' || $order_consent === 'yes' ) {
+						if ( true === $order_consent || '1' === $order_consent || 'yes' === $order_consent ) {
 							$has_consent = true;
-						} elseif ( $order_consent === false || $order_consent === '0' || $order_consent === 'no' ) {
+						} elseif ( false === $order_consent || '0' === $order_consent || 'no' === $order_consent ) {
 							$has_consent = false;
 						} else {
 							$customer_id = $order->get_customer_id();
 							if ( $customer_id ) {
 								$user_consent = get_user_meta( $customer_id, 'desishad/sms-consent', true );
-								if ( ! empty( $user_consent ) && ( $user_consent == '1' || strtolower( $user_consent ) === 'yes' || strtolower( $user_consent ) === 'on' || strtolower( $user_consent ) === 'true' ) ) {
+								if ( ! empty( $user_consent ) && ( '1' == $user_consent || 'yes' === strtolower( $user_consent ) || 'on' === strtolower( $user_consent ) || 'true' === strtolower( $user_consent ) ) ) {
 									$has_consent = true;
 								}
 							}
@@ -154,7 +174,7 @@ class DSN_Send_SMS {
 						}
 					}
 
-					// Track unique phone numbers
+					// Track unique phone numbers.
 					$map['all'][ $phone ] = true;
 
 					foreach ( $order->get_items() as $item ) {
@@ -212,28 +232,27 @@ class DSN_Send_SMS {
 		<?php
 	}
 
+	/**
+	 * Process form submissions.
+	 */
 	public function process_send_sms_actions() {
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( ! isset( $_POST['dsn_action'] ) ) {
 			return;
 		}
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		$action = sanitize_text_field( wp_unslash( $_POST['dsn_action'] ) );
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( ! isset( $_POST['dsn_nonce'] ) ) {
 			return;
 		}
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		$nonce = sanitize_text_field( wp_unslash( $_POST['dsn_nonce'] ) );
 
-		if ( $action === 'send_single' && wp_verify_nonce( $nonce, 'dsn_send_single_sms' ) ) {
+		if ( 'send_single' === $action && wp_verify_nonce( $nonce, 'dsn_send_single_sms' ) ) {
 			$this->handle_single_sms();
-		} elseif ( $action === 'send_bulk_csv' && wp_verify_nonce( $nonce, 'dsn_send_bulk_csv' ) ) {
+		} elseif ( 'send_bulk_csv' === $action && wp_verify_nonce( $nonce, 'dsn_send_bulk_csv' ) ) {
 			$this->handle_bulk_csv();
-		} elseif ( $action === 'send_bulk_filter' && wp_verify_nonce( $nonce, 'dsn_send_bulk_filter' ) ) {
+		} elseif ( 'send_bulk_filter' === $action && wp_verify_nonce( $nonce, 'dsn_send_bulk_filter' ) ) {
 			$this->handle_bulk_filter();
 		}
 
@@ -249,10 +268,17 @@ class DSN_Send_SMS {
 		exit;
 	}
 
+	/**
+	 * Handle single SMS submission.
+	 */
 	private function handle_single_sms() {
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+
+		if ( ! isset( $_POST['dsn_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['dsn_nonce'] ) ), 'dsn_send_single_sms' ) ) {
+			// Nonce verification failed. Stop execution.
+			return;
+		}
+
 		$to = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
 		if ( $to && $message ) {
@@ -260,14 +286,24 @@ class DSN_Send_SMS {
 		}
 	}
 
+	/**
+	 * Handle bulk CSV upload submission.
+	 */
 	private function handle_bulk_csv() {
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+
+		if ( ! isset( $_POST['dsn_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['dsn_nonce'] ) ), 'dsn_send_bulk_csv' ) ) {
+			// Nonce verification failed. Stop execution.
+			return;
+		}
+
 		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
-		if ( ! empty( $_FILES['csv_file']['tmp_name'] ) && $message ) {
-            // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
-			$file = fopen( $_FILES['csv_file']['tmp_name'], 'r' );
+		// Safely extract and sanitize the temporary file path.
+		$csv_tmp_name = isset( $_FILES['csv_file']['tmp_name'] ) ? sanitize_text_field( wp_unslash( $_FILES['csv_file']['tmp_name'] ) ) : '';
+
+		// Ensure the path isn't empty AND that it is a legitimate uploaded file.
+		if ( ! empty( $csv_tmp_name ) && is_uploaded_file( $csv_tmp_name ) && $message ) {
+			$file = fopen( $csv_tmp_name, 'r' );
 			if ( $file ) {
 				while ( ( $row = fgetcsv( $file ) ) !== false ) {
 					$to = sanitize_text_field( $row[0] );
@@ -280,10 +316,17 @@ class DSN_Send_SMS {
 		}
 	}
 
+	/**
+	 * Handle bulk filter submission.
+	 */
 	private function handle_bulk_filter() {
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+
+		if ( ! isset( $_POST['dsn_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['dsn_nonce'] ) ), 'dsn_send_bulk_filter' ) ) {
+			// Nonce verification failed. Stop execution.
+			return;
+		}
+
 		$product_id = isset( $_POST['product_id'] ) ? sanitize_text_field( wp_unslash( $_POST['product_id'] ) ) : 'all';
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
 		if ( empty( $message ) ) {
@@ -303,25 +346,25 @@ class DSN_Send_SMS {
 
 		$sent_phones = array();
 
-		// Iterate over native orders rather than users to ensure Guest orders are captured
+		// Iterate over native orders rather than users to ensure Guest orders are captured.
 		foreach ( $orders as $order ) {
 			$phone = $order->get_billing_phone();
 			if ( empty( $phone ) ) {
 				continue;
 			}
 
-			// Skip invalid phone numbers
-			if ( $order->get_meta( '_dsn_phone_valid' ) === '-1' ) {
+			// Skip invalid phone numbers.
+			if ( '-1' === $order->get_meta( '_dsn_phone_valid' ) ) {
 				continue;
 			}
 
-			// Prevent sending multiple SMS to the same phone number
+			// Prevent sending multiple SMS to the same phone number.
 			if ( isset( $sent_phones[ $phone ] ) ) {
 				continue;
 			}
 
-			// Check if this order has the selected product
-			if ( $product_id !== 'all' ) {
+			// Check if this order has the selected product.
+			if ( 'all' !== $product_id ) {
 				$found_product = false;
 				foreach ( $order->get_items() as $item ) {
 					if ( (int) $item->get_product_id() === (int) $product_id ) {
@@ -334,31 +377,31 @@ class DSN_Send_SMS {
 				}
 			}
 
-			// Check consent (handles both registered users and guest orders)
+			// Check consent (handles both registered users and guest orders).
 			$has_consent   = false;
 			$order_consent = $order->get_meta( '_wc_other/dsn/sms_consent' );
-			if ( $order_consent === '' || $order_consent === null ) {
+			if ( '' === $order_consent || null === $order_consent ) {
 				$order_consent = $order->get_meta( 'dsn/sms_consent' );
 			}
-			if ( $order_consent === '' || $order_consent === null ) {
+			if ( '' === $order_consent || null === $order_consent ) {
 				$order_consent = $order->get_meta( '_dsn_sms_consent' );
 			}
 
-			if ( $order_consent === true || $order_consent === '1' || $order_consent === 'yes' ) {
+			if ( true === $order_consent || '1' === $order_consent || 'yes' === $order_consent ) {
 				$has_consent = true;
-			} elseif ( $order_consent === false || $order_consent === '0' || $order_consent === 'no' ) {
+			} elseif ( false === $order_consent || '0' === $order_consent || 'no' === $order_consent ) {
 				$has_consent = false;
 			} else {
 				$customer_id = $order->get_customer_id();
 				if ( $customer_id ) {
 					$user_consent = get_user_meta( $customer_id, 'desishad/sms-consent', true );
-					if ( ! empty( $user_consent ) && ( $user_consent == '1' || strtolower( $user_consent ) === 'yes' || strtolower( $user_consent ) === 'on' || strtolower( $user_consent ) === 'true' ) ) {
+					if ( ! empty( $user_consent ) && ( '1' == $user_consent || 'yes' === strtolower( $user_consent ) || 'on' === strtolower( $user_consent ) || 'true' === strtolower( $user_consent ) ) ) {
 						$has_consent = true;
 					}
 				}
 			}
 
-			// If settings allow sending to no-consent users, bypass the consent check
+			// If settings allow sending to no-consent users, bypass the consent check.
 			if ( get_option( 'dsn_send_no_consent', 0 ) || $has_consent ) {
 				$sent_phones[ $phone ] = true;
 				DSN_Twilio_API::send_sms( $phone, $message, $order->get_customer_id() );

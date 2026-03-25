@@ -1,20 +1,31 @@
 <?php
 /**
  * Settings class for OptiMessage
+ *
+ * @package OptiMessage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class DSN_Settings
+ * Registers and renders the plugin settings.
+ */
 class DSN_Settings {
 
-
+	/**
+	 * Constructor.
+	 */
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 	}
 
+	/**
+	 * Add settings page to the admin menu.
+	 */
 	public function add_settings_page() {
 		add_menu_page(
 			__( 'OptiMessage', 'desishad-sms-notifier' ),
@@ -27,13 +38,16 @@ class DSN_Settings {
 		);
 	}
 
+	/**
+	 * Register plugin settings.
+	 */
 	public function register_settings() {
-		// Twilio API Settings
+		// Twilio API Settings.
 		register_setting( 'dsn_api_group', 'dsn_twilio_sid', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'dsn_api_group', 'dsn_twilio_token', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'dsn_api_group', 'dsn_twilio_from', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 
-		// General/Consent Settings
+		// General/Consent Settings.
 		register_setting(
 			'dsn_general_group',
 			'dsn_wc_sms_enabled',
@@ -91,12 +105,15 @@ class DSN_Settings {
 			)
 		);
 
-		// Template Settings
+		// Template Settings.
 		register_setting( 'dsn_templates_group', 'dsn_tpl_placed', array( 'sanitize_callback' => 'wp_kses_post' ) );
 		register_setting( 'dsn_templates_group', 'dsn_tpl_completed', array( 'sanitize_callback' => 'wp_kses_post' ) );
 		register_setting( 'dsn_templates_group', 'dsn_tpl_refunded', array( 'sanitize_callback' => 'wp_kses_post' ) );
 	}
 
+	/**
+	 * Render the settings page.
+	 */
 	public function render_settings_page() {
 		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'send';
 		?>
@@ -105,51 +122,54 @@ class DSN_Settings {
 		<?php settings_errors(); ?>
 
 			<h2 class="nav-tab-wrapper">
-				<a href="?page=dsn-settings&tab=send" class="nav-tab <?php echo $active_tab == 'send' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Send SMS', 'desishad-sms-notifier' ); ?></a>
-				<a href="?page=dsn-settings&tab=history" class="nav-tab <?php echo $active_tab == 'history' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'History', 'desishad-sms-notifier' ); ?></a>
-				<a href="?page=dsn-settings&tab=subscribers" class="nav-tab <?php echo $active_tab == 'subscribers' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscribers', 'desishad-sms-notifier' ); ?></a>
-				<a href="?page=dsn-settings&tab=templates" class="nav-tab <?php echo $active_tab == 'templates' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'SMS Templates', 'desishad-sms-notifier' ); ?></a>
-				<a href="?page=dsn-settings&tab=general" class="nav-tab <?php echo $active_tab == 'general' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'General Settings', 'desishad-sms-notifier' ); ?></a>
-				<a href="?page=dsn-settings&tab=api" class="nav-tab <?php echo $active_tab == 'api' ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Twilio API', 'desishad-sms-notifier' ); ?></a>
+				<a href="?page=dsn-settings&tab=send" class="nav-tab <?php echo 'send' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Send SMS', 'desishad-sms-notifier' ); ?></a>
+				<a href="?page=dsn-settings&tab=history" class="nav-tab <?php echo 'history' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'History', 'desishad-sms-notifier' ); ?></a>
+				<a href="?page=dsn-settings&tab=subscribers" class="nav-tab <?php echo 'subscribers' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscribers', 'desishad-sms-notifier' ); ?></a>
+				<a href="?page=dsn-settings&tab=templates" class="nav-tab <?php echo 'templates' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'SMS Templates', 'desishad-sms-notifier' ); ?></a>
+				<a href="?page=dsn-settings&tab=general" class="nav-tab <?php echo 'general' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'General Settings', 'desishad-sms-notifier' ); ?></a>
+				<a href="?page=dsn-settings&tab=api" class="nav-tab <?php echo 'api' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Twilio API', 'desishad-sms-notifier' ); ?></a>
 			</h2>
 
 		<?php
 		$options_tabs = array( 'api', 'general', 'templates' );
-		if ( in_array( $active_tab, $options_tabs ) ) :
+		if ( in_array( $active_tab, $options_tabs, true ) ) :
 			?>
 			<form method="post" action="options.php">
 		<?php endif; ?>
 		<?php
-		if ( $active_tab == 'api' ) {
+		if ( 'api' === $active_tab ) {
 			settings_fields( 'dsn_api_group' );
 			$this->render_api_tab();
 			submit_button();
-		} elseif ( $active_tab == 'general' ) {
+		} elseif ( 'general' === $active_tab ) {
 			settings_fields( 'dsn_general_group' );
 			$this->render_general_tab();
 			submit_button();
-		} elseif ( $active_tab == 'templates' ) {
+		} elseif ( 'templates' === $active_tab ) {
 			settings_fields( 'dsn_templates_group' );
 			$this->render_templates_tab();
 			submit_button();
-		} elseif ( $active_tab == 'send' ) {
-			// We will render the send SMS interface here, no standard submit button
+		} elseif ( 'send' === $active_tab ) {
+			// We will render the send SMS interface here, no standard submit button.
 			do_action( 'dsn_render_send_sms_tab' );
-		} elseif ( $active_tab == 'subscribers' ) {
-			// Render subscribers table
+		} elseif ( 'subscribers' === $active_tab ) {
+			// Render subscribers table.
 			do_action( 'dsn_render_subscribers_tab' );
-		} elseif ( $active_tab == 'history' ) {
-			// Render history table
+		} elseif ( 'history' === $active_tab ) {
+			// Render history table.
 			do_action( 'dsn_render_history_tab' );
 		}
 		?>
-		<?php if ( in_array( $active_tab, $options_tabs ) ) : ?>
+		<?php if ( in_array( $active_tab, $options_tabs, true ) ) : ?>
 			</form>
 		<?php endif; ?>
 		</div>
 		<?php
 	}
 
+	/**
+	 * Render the API settings tab.
+	 */
 	private function render_api_tab() {
 		?>
 		<table class="form-table">
@@ -170,6 +190,9 @@ class DSN_Settings {
 		<?php
 	}
 
+	/**
+	 * Render the General settings tab.
+	 */
 	private function render_general_tab() {
 		?>
 		<table class="form-table">
@@ -226,6 +249,9 @@ class DSN_Settings {
 		<?php
 	}
 
+	/**
+	 * Render the Templates settings tab.
+	 */
 	private function render_templates_tab() {
 		?>
 		<p class="description">

@@ -1,15 +1,23 @@
 <?php
 /**
  * User Profile Consent for OptiMessage
+ *
+ * @package OptiMessage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class DSN_User_Profile
+ * Handles user profile fields and updates.
+ */
 class DSN_User_Profile {
 
-
+	/**
+	 * Constructor.
+	 */
 	public function __construct() {
 		add_action( 'show_user_profile', array( $this, 'add_sms_consent_field' ) );
 		add_action( 'edit_user_profile', array( $this, 'add_sms_consent_field' ) );
@@ -17,14 +25,21 @@ class DSN_User_Profile {
 		add_action( 'personal_options_update', array( $this, 'save_sms_consent_field' ) );
 		add_action( 'edit_user_profile_update', array( $this, 'save_sms_consent_field' ) );
 
-		// Validate phone immediately when profile saves
+		// Validate phone immediately when profile saves.
 		add_action( 'profile_update', array( $this, 'validate_phone_on_profile_save' ), 10, 2 );
 	}
 
+	/**
+	 * Validate and update phone on profile save.
+	 *
+	 * @param int   $user_id       User ID.
+	 * @param array $old_user_data Old user data.
+	 */
 	public function validate_phone_on_profile_save( $user_id, $old_user_data ) {
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by WordPress/WooCommerce core during profile update.
 		if ( isset( $_POST['billing_phone'] ) ) {
-            // phpcs:ignore WordPress.Security.NonceVerification.Missing
+
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by WordPress/WooCommerce core during profile update.
 			$phone = sanitize_text_field( wp_unslash( $_POST['billing_phone'] ) );
 			if ( empty( $phone ) ) {
 				delete_user_meta( $user_id, '_dsn_phone_valid' );
@@ -48,9 +63,14 @@ class DSN_User_Profile {
 		}
 	}
 
+	/**
+	 * Add SMS consent field to user profile.
+	 *
+	 * @param WP_User $user The user object.
+	 */
 	public function add_sms_consent_field( $user ) {
 		if ( ! get_option( 'dsn_consent_profile', 0 ) ) {
-			return; // disabled in settings
+			return; // Disabled in settings.
 		}
 
 		$consent = get_user_meta( $user->ID, 'desishad/sms-consent', true );
@@ -69,16 +89,22 @@ class DSN_User_Profile {
 		<?php
 	}
 
+	/**
+	 * Save SMS consent field value.
+	 *
+	 * @param int $user_id The user ID.
+	 * @return bool|void
+	 */
 	public function save_sms_consent_field( $user_id ) {
 		if ( ! current_user_can( 'edit_user', $user_id ) ) {
 			return false;
 		}
 
 		if ( ! get_option( 'dsn_consent_profile', 0 ) ) {
-			return false; // disabled in settings
+			return false; // Disabled in settings.
 		}
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by WordPress/WooCommerce core during profile update.
 		$consent = isset( $_POST['dsn_sms_consent'] ) ? '1' : '0';
 		update_user_meta( $user_id, 'desishad/sms-consent', $consent );
 	}

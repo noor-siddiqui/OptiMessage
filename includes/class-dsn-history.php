@@ -1,33 +1,44 @@
 <?php
 /**
  * History Tab for OptiMessage
+ *
+ * @package OptiMessage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class DSN_History
+ * Handles the display of SMS sending history.
+ */
 class DSN_History {
 
-
+	/**
+	 * Constructor.
+	 */
 	public function __construct() {
 		add_action( 'dsn_render_history_tab', array( $this, 'render' ) );
 	}
 
+	/**
+	 * Render the history tab page.
+	 */
 	public function render() {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'dsn_sms_history';
 
-		// Handle pagination
+		// Handle pagination.
 		$per_page = 20;
 		$paged    = isset( $_GET['paged'] ) ? max( 1, intval( $_GET['paged'] ) ) : 1;
 		$offset   = ( $paged - 1 ) * $per_page;
 
-     // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names cannot be prepared.
 		$total_items = $wpdb->get_var( "SELECT COUNT(id) FROM {$table_name}" );
 		$total_pages = ceil( $total_items / $per_page );
 
-     // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names cannot be prepared.
 		$results = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table_name} ORDER BY sent_at DESC LIMIT %d OFFSET %d", $per_page, $offset ) );
 		?>
 		<h2><?php esc_html_e( 'SMS Sending History', 'desishad-sms-notifier' ); ?></h2>
@@ -39,7 +50,7 @@ class DSN_History {
 		printf(
 		/* translators: %s: number of items */
 			esc_html( _n( '%s item', '%s items', $total_items, 'desishad-sms-notifier' ) ),
-			number_format_i18n( $total_items )
+			esc_html( number_format_i18n( $total_items ) )
 		);
 		?>
 				</span>
@@ -55,7 +66,7 @@ class DSN_History {
 					'current'   => $paged,
 				)
 			);
-			echo '<span class="pagination-links">' . $page_links . '</span>';
+			echo wp_kses_post( '<span class="pagination-links">' . $page_links . '</span>' );
 		}
 		?>
 			</div>
@@ -90,7 +101,7 @@ class DSN_History {
 							<td><?php echo nl2br( esc_html( wp_trim_words( $row->message, 20, '...' ) ) ); ?></td>
 							<td>
 				<?php
-				$color = $row->status === 'sent' ? 'green' : ( $row->status === 'failed' ? 'red' : 'gray' );
+				$color = 'sent' === $row->status ? 'green' : ( 'failed' === $row->status ? 'red' : 'gray' );
 				echo '<span style="color:' . esc_attr( $color ) . ';font-weight:bold;">' . esc_html( ucfirst( $row->status ) ) . '</span>';
 				?>
 							</td>
