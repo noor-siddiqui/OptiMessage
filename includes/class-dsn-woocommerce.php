@@ -49,7 +49,7 @@ class DSN_WooCommerce {
 			woocommerce_register_additional_checkout_field(
 				array(
 					'id'       => 'dsn/sms_consent',
-					'label'    => esc_html__( 'I want to receive SMS notifications about my order.', 'desishad-sms-notifier' ),
+					'label'    => esc_html__( 'I want to receive SMS notifications about my order and promotions.', 'desishad-sms-notifier' ),
 					'location' => 'contact',
 					'type'     => 'checkbox',
 					'required' => $is_required,

@@ -69,7 +69,6 @@ class DSN_Send_SMS {
 					<th scope="row"><?php esc_html_e( 'Message', 'desishad-sms-notifier' ); ?></th>
 					<td>
 						<textarea name="message" rows="5" class="large-text" required></textarea>
-						<br><span class="description"><?php esc_html_e( 'Enter your message here.', 'desishad-sms-notifier' ); ?></span>
 					</td>
 				</tr>
 			</table>

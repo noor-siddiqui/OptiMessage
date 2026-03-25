@@ -21,6 +21,7 @@ class DSN_Settings {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_footer', array( $this, 'render_sms_character_counter_js' ) );
 	}
 
 	/**
@@ -277,6 +278,61 @@ class DSN_Settings {
 				</td>
 			</tr>
 		</table>
+		<?php
+	}
+
+	/**
+	 * Inject JavaScript for SMS Character & Segment Counting.
+	 */
+	public function render_sms_character_counter_js() {
+		// Only run on our settings page.
+		$screen = get_current_screen();
+		if ( ! $screen || strpos( $screen->id, 'dsn-settings' ) === false ) {
+			return;
+		}
+		?>
+		<script type="text/javascript">
+			jQuery(document).ready(function($) {
+				// Target all textareas used for SMS messages
+				var $textareas = $('textarea[name="message"], textarea[name="dsn_tpl_placed"], textarea[name="dsn_tpl_completed"], textarea[name="dsn_tpl_refunded"]');
+
+				if ($textareas.length === 0) {
+					return;
+				}
+
+				// Append counter elements dynamically
+				$textareas.each(function() {
+					var $counter = $('<div class="dsn-sms-counter" style="margin-top:8px;font-size:13px;color:#555;"></div>');
+					$(this).after($counter);
+					updateCounter($(this), $counter);
+				});
+
+				$textareas.on('input keyup change', function() {
+					updateCounter($(this), $(this).next('.dsn-sms-counter'));
+				});
+
+				function updateCounter($textarea, $counter) {
+					var text = $textarea.val();
+					var length = text.length;
+
+					// Basic approximation: Check for characters outside standard printable ASCII. 
+					// Technically GSM-7 allows some extended characters, but this securely catches Bangla/Unicode.
+					var isUnicode = /[^\u0000-\u007F]+/.test(text);
+
+					var limit = isUnicode ? 70 : 160;
+					var splitLimit = isUnicode ? 67 : 153;
+
+					var segments = 1;
+					if (length > limit) {
+						segments = Math.ceil(length / splitLimit);
+					}
+
+					var encodingText = isUnicode ? '<span style="color:#d63638;font-weight:bold;">Unicode (UCS-2)</span>' : '<span style="color:#007cba;font-weight:bold;">GSM-7</span>';
+					
+					$counter.html('Characters: <strong>' + length + '</strong> &nbsp;|&nbsp; SMS Segments: <strong>' + segments + '</strong> <span style="font-size:11px;color:#888;">(Max ' + limit + ' per segment)</span> &nbsp;|&nbsp; Encoding: ' + encodingText);
+				}
+			});
+		</script>
 		<?php
 	}
 }
