@@ -132,6 +132,17 @@ class DSN_Send_SMS {
 			);
 
 			if ( $orders ) {
+				// ⚡ Bolt: Pre-load user meta cache to avoid N+1 queries during the loop.
+				$customer_ids = array();
+				foreach ( $orders as $order ) {
+					if ( $order->get_customer_id() ) {
+						$customer_ids[] = $order->get_customer_id();
+					}
+				}
+				if ( ! empty( $customer_ids ) ) {
+					update_meta_cache( 'user', array_unique( $customer_ids ) );
+				}
+
 				foreach ( $orders as $order ) {
 					$phone = $order->get_billing_phone();
 					if ( empty( $phone ) ) {
@@ -341,6 +352,17 @@ class DSN_Send_SMS {
 
 		if ( ! $orders ) {
 			return;
+		}
+
+		// ⚡ Bolt: Pre-load user meta cache to avoid N+1 queries during the loop.
+		$customer_ids = array();
+		foreach ( $orders as $order ) {
+			if ( $order->get_customer_id() ) {
+				$customer_ids[] = $order->get_customer_id();
+			}
+		}
+		if ( ! empty( $customer_ids ) ) {
+			update_meta_cache( 'user', array_unique( $customer_ids ) );
 		}
 
 		$sent_phones = array();
