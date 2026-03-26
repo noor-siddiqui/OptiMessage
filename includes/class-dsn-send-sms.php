@@ -271,13 +271,9 @@ class DSN_Send_SMS {
 	 * Handle single SMS submission.
 	 */
 	private function handle_single_sms() {
-
-		if ( ! isset( $_POST['dsn_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['dsn_nonce'] ) ), 'dsn_send_single_sms' ) ) {
-			// Nonce verification failed. Stop execution.
-			return;
-		}
-
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by the caller process_send_sms_actions.
 		$to = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by the caller process_send_sms_actions.
 		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
 		if ( $to && $message ) {
@@ -289,12 +285,7 @@ class DSN_Send_SMS {
 	 * Handle bulk CSV upload submission.
 	 */
 	private function handle_bulk_csv() {
-
-		if ( ! isset( $_POST['dsn_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['dsn_nonce'] ) ), 'dsn_send_bulk_csv' ) ) {
-			// Nonce verification failed. Stop execution.
-			return;
-		}
-
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by the caller process_send_sms_actions.
 		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
 		// Safely extract and sanitize the temporary file path.
@@ -319,13 +310,9 @@ class DSN_Send_SMS {
 	 * Handle bulk filter submission.
 	 */
 	private function handle_bulk_filter() {
-
-		if ( ! isset( $_POST['dsn_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['dsn_nonce'] ) ), 'dsn_send_bulk_filter' ) ) {
-			// Nonce verification failed. Stop execution.
-			return;
-		}
-
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by the caller process_send_sms_actions.
 		$product_id = isset( $_POST['product_id'] ) ? sanitize_text_field( wp_unslash( $_POST['product_id'] ) ) : 'all';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by the caller process_send_sms_actions.
 		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
 		if ( empty( $message ) ) {
