@@ -132,6 +132,18 @@ class DSN_Send_SMS {
 			);
 
 			if ( $orders ) {
+				// Pre-populate user meta cache to prevent N+1 queries in the loop.
+				$customer_ids = array();
+				foreach ( $orders as $order ) {
+					$customer_id = $order->get_customer_id();
+					if ( $customer_id ) {
+						$customer_ids[] = $customer_id;
+					}
+				}
+				if ( ! empty( $customer_ids ) ) {
+					update_meta_cache( 'user', array_unique( $customer_ids ) );
+				}
+
 				foreach ( $orders as $order ) {
 					$phone = $order->get_billing_phone();
 					if ( empty( $phone ) ) {
@@ -277,7 +289,7 @@ class DSN_Send_SMS {
 			return;
 		}
 
-		$to = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
+		$to      = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
 		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
 		if ( $to && $message ) {
@@ -326,7 +338,7 @@ class DSN_Send_SMS {
 		}
 
 		$product_id = isset( $_POST['product_id'] ) ? sanitize_text_field( wp_unslash( $_POST['product_id'] ) ) : 'all';
-		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
+		$message    = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
 		if ( empty( $message ) ) {
 			return;
@@ -341,6 +353,18 @@ class DSN_Send_SMS {
 
 		if ( ! $orders ) {
 			return;
+		}
+
+		// Pre-populate user meta cache to prevent N+1 queries in the loop.
+		$customer_ids = array();
+		foreach ( $orders as $order ) {
+			$customer_id = $order->get_customer_id();
+			if ( $customer_id ) {
+				$customer_ids[] = $customer_id;
+			}
+		}
+		if ( ! empty( $customer_ids ) ) {
+			update_meta_cache( 'user', array_unique( $customer_ids ) );
 		}
 
 		$sent_phones = array();
