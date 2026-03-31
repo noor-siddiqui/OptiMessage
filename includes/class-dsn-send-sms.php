@@ -132,6 +132,19 @@ class DSN_Send_SMS {
 			);
 
 			if ( $orders ) {
+				// ⚡ Bolt: Pre-populate user meta cache to prevent N+1 queries when fetching consent.
+				$customer_ids = array();
+				foreach ( $orders as $order ) {
+					$customer_id = $order->get_customer_id();
+					if ( $customer_id ) {
+						$customer_ids[] = $customer_id;
+					}
+				}
+				$customer_ids = array_unique( $customer_ids );
+				if ( ! empty( $customer_ids ) ) {
+					update_meta_cache( 'user', $customer_ids );
+				}
+
 				foreach ( $orders as $order ) {
 					$phone = $order->get_billing_phone();
 					if ( empty( $phone ) ) {
@@ -162,7 +175,7 @@ class DSN_Send_SMS {
 							$customer_id = $order->get_customer_id();
 							if ( $customer_id ) {
 								$user_consent = get_user_meta( $customer_id, 'desishad/sms-consent', true );
-								if ( ! empty( $user_consent ) && ( '1' == $user_consent || 'yes' === strtolower( $user_consent ) || 'on' === strtolower( $user_consent ) || 'true' === strtolower( $user_consent ) ) ) {
+								if ( ! empty( $user_consent ) && ( '1' === $user_consent || 'yes' === strtolower( $user_consent ) || 'on' === strtolower( $user_consent ) || 'true' === strtolower( $user_consent ) ) ) {
 									$has_consent = true;
 								}
 							}
@@ -277,7 +290,7 @@ class DSN_Send_SMS {
 			return;
 		}
 
-		$to = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
+		$to      = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
 		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
 		if ( $to && $message ) {
@@ -326,7 +339,7 @@ class DSN_Send_SMS {
 		}
 
 		$product_id = isset( $_POST['product_id'] ) ? sanitize_text_field( wp_unslash( $_POST['product_id'] ) ) : 'all';
-		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
+		$message    = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
 		if ( empty( $message ) ) {
 			return;
@@ -341,6 +354,19 @@ class DSN_Send_SMS {
 
 		if ( ! $orders ) {
 			return;
+		}
+
+		// ⚡ Bolt: Pre-populate user meta cache to prevent N+1 queries when fetching consent.
+		$customer_ids = array();
+		foreach ( $orders as $order ) {
+			$customer_id = $order->get_customer_id();
+			if ( $customer_id ) {
+				$customer_ids[] = $customer_id;
+			}
+		}
+		$customer_ids = array_unique( $customer_ids );
+		if ( ! empty( $customer_ids ) ) {
+			update_meta_cache( 'user', $customer_ids );
 		}
 
 		$sent_phones = array();
@@ -394,7 +420,7 @@ class DSN_Send_SMS {
 				$customer_id = $order->get_customer_id();
 				if ( $customer_id ) {
 					$user_consent = get_user_meta( $customer_id, 'desishad/sms-consent', true );
-					if ( ! empty( $user_consent ) && ( '1' == $user_consent || 'yes' === strtolower( $user_consent ) || 'on' === strtolower( $user_consent ) || 'true' === strtolower( $user_consent ) ) ) {
+					if ( ! empty( $user_consent ) && ( '1' === $user_consent || 'yes' === strtolower( $user_consent ) || 'on' === strtolower( $user_consent ) || 'true' === strtolower( $user_consent ) ) ) {
 						$has_consent = true;
 					}
 				}
