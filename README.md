@@ -61,6 +61,17 @@ Contributions are what make the open-source community such an amazing place to l
 
 If you discover any security-related issues or vulnerabilities within OptiMessage, please do not disclose them publicly via GitHub issues. Instead, please email the author directly or open a confidential security advisory on GitHub. All security vulnerabilities will be promptly addressed.
 
+## 🤖 AI-Assisted Development
+
+This plugin was built with significant help from **Antigravity** (by Google DeepMind), **Google Gemini**, and **Jules** (Google's async coding agent) — three AI assistants that wore many hats throughout the development process:
+
+- 🧑‍💻 **Junior Developer** — wrote boilerplate, scaffolded features, and handled repetitive code so I could focus on the big picture.
+- 🧪 **Tester & Bug Hunter** — spotted edge cases, identified security vulnerabilities, and caught logic flaws before they hit production.
+- 🏗️ **Architecture Advisor** — suggested design patterns, refactored messy code into clean OOP structures, and helped enforce WordPress Coding Standards.
+- 📝 **Code Reviewer** — reviewed every line for WPCS compliance, performance issues, and best practices like a seasoned senior dev.
+
+They didn't just autocomplete — they pair-programmed, debated approaches, and sometimes pushed back with better ideas. Think of them as the tireless teammates who never sleep, never complain, and always have a suggestion ready. The plugin is mine, but the journey was a collaboration. 🤝
+
 ## 👨‍💻 Developer
 
 **Author:** Noor Nabiul Alam Siddiqui
