@@ -17,11 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
-define( 'OM_VERSION', '0.1.0_beta' );
-=======
 define( 'OM_VERSION', '0.2.0_beta' );
->>>>>>> main
 define( 'OM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 

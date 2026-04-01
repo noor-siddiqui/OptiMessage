@@ -316,11 +316,7 @@ class OM_Settings {
 					var text = $textarea.val();
 					var length = text.length;
 
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
 					// Basic approximation: Check for characters outside standard printable ASCII.
-=======
-					// Basic approximation: Check for characters outside standard printable ASCII. 
->>>>>>> main
 					// Technically GSM-7 allows some extended characters, but this securely catches Bangla/Unicode.
 					var isUnicode = /[^\u0000-\u007F]+/.test(text);
 
@@ -333,11 +329,7 @@ class OM_Settings {
 					}
 
 					var encodingText = isUnicode ? '<span style="color:#d63638;font-weight:bold;">Unicode (UCS-2)</span>' : '<span style="color:#007cba;font-weight:bold;">GSM-7</span>';
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
 
-=======
-					
->>>>>>> main
 					$counter.html('Characters: <strong>' + length + '</strong> &nbsp;|&nbsp; SMS Segments: <strong>' + segments + '</strong> <span style="font-size:11px;color:#888;">(Max ' + limit + ' per segment)</span> &nbsp;|&nbsp; Encoding: ' + encodingText);
 				}
 			});

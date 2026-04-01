@@ -23,10 +23,7 @@ class OM_Send_SMS {
 		add_action( 'om_render_send_sms_tab', array( $this, 'render' ) );
 		add_action( 'admin_init', array( $this, 'process_send_sms_actions' ) );
 		add_action( 'wp_ajax_om_setup_sms_queue', array( $this, 'ajax_setup_sms_queue' ) );
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
-=======
 		add_action( 'wp_ajax_om_setup_csv_queue', array( $this, 'ajax_setup_csv_queue' ) );
->>>>>>> main
 		add_action( 'wp_ajax_om_process_sms_batch', array( $this, 'ajax_process_sms_batch' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 	}
@@ -91,16 +88,6 @@ class OM_Send_SMS {
 	 */
 	private function render_bulk_csv_form() {
 		?>
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
-		<p><?php esc_html_e( 'Upload a CSV file containing phone numbers in the first column.', 'optimessage' ); ?></p>
-		<form method="post" action="" enctype="multipart/form-data">
-		<?php wp_nonce_field( 'om_send_bulk_csv', 'om_nonce' ); ?>
-			<input type="hidden" name="om_action" value="send_bulk_csv" />
-			<table class="form-table">
-				<tr valign="top">
-					<th scope="row"><?php esc_html_e( 'CSV File', 'optimessage' ); ?></th>
-					<td><input type="file" name="csv_file" accept=".csv" required /></td>
-=======
 		<p><?php esc_html_e( 'Upload a CSV file containing phone numbers (with country code) in the first column. One number per row.', 'optimessage' ); ?></p>
 		<p>
 			<a href="<?php echo esc_url( plugin_dir_url( __DIR__ ) . 'assets/templates/sms-template.csv' ); ?>" download class="button button-secondary">
@@ -117,7 +104,6 @@ class OM_Send_SMS {
 						<input type="file" name="csv_file" accept=".csv" required />
 						<p class="description"><?php esc_html_e( 'First column must contain phone numbers with country code (e.g. 8801712345678). The "+" prefix is optional — it will be added automatically if missing.', 'optimessage' ); ?></p>
 					</td>
->>>>>>> main
 				</tr>
 				<tr valign="top">
 					<th scope="row"><?php esc_html_e( 'Message', 'optimessage' ); ?></th>
@@ -126,9 +112,6 @@ class OM_Send_SMS {
 					</td>
 				</tr>
 			</table>
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
-		<?php submit_button( esc_html__( 'Send to CSV Numbers', 'optimessage' ) ); ?>
-=======
 		<p class="submit">
 			<button type="submit" class="button button-primary" id="om-csv-send-btn"><?php esc_html_e( 'Send to CSV Numbers', 'optimessage' ); ?></button>
 		</p>
@@ -139,7 +122,6 @@ class OM_Send_SMS {
 				<div id="om-csv-progress-bar" style="background: #2271b1; width: 0%; height: 100%; transition: width 0.3s ease;"></div>
 			</div>
 		</div>
->>>>>>> main
 		</form>
 		<?php
 	}
@@ -298,19 +280,10 @@ class OM_Send_SMS {
 		}
 
 		$action = sanitize_text_field( wp_unslash( $_POST['om_action'] ) );
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
-		$nonce = sanitize_text_field( wp_unslash( $_POST['om_nonce'] ) );
-
-		if ( 'send_single' === $action && wp_verify_nonce( $nonce, 'om_send_single_sms' ) ) {
-			$this->handle_single_sms();
-		} elseif ( 'send_bulk_csv' === $action && wp_verify_nonce( $nonce, 'om_send_bulk_csv' ) ) {
-			$this->handle_bulk_csv();
-=======
 		$nonce  = sanitize_text_field( wp_unslash( $_POST['om_nonce'] ) );
 
 		if ( 'send_single' === $action && wp_verify_nonce( $nonce, 'om_send_single_sms' ) ) {
 			$this->handle_single_sms();
->>>>>>> main
 		} else {
 			return;
 		}
@@ -332,15 +305,9 @@ class OM_Send_SMS {
 	 */
 	private function handle_single_sms() {
 
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is explicitly verified in the conditional block below.
-		$to = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is explicitly verified in the conditional block below.
-=======
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is explicitly verified in the calling method.
 		$to = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is explicitly verified in the calling method.
->>>>>>> main
 		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
 		if ( $to && $message ) {
@@ -349,39 +316,7 @@ class OM_Send_SMS {
 	}
 
 	/**
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
-	 * Handle bulk CSV upload submission.
-	 */
-	private function handle_bulk_csv() {
-
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is explicitly verified in the conditional block below.
-		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
-
-		// Safely extract and sanitize the temporary file path.
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is explicitly verified in the conditional block below.
-		$csv_tmp_name = isset( $_FILES['csv_file']['tmp_name'] ) ? sanitize_text_field( wp_unslash( $_FILES['csv_file']['tmp_name'] ) ) : '';
-
-		// Ensure the path isn't empty AND that it is a legitimate uploaded file.
-		if ( ! empty( $csv_tmp_name ) && is_uploaded_file( $csv_tmp_name ) && $message ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Reading a temporary uploaded file; WP_Filesystem is unnecessary here.
-			$file = fopen( $csv_tmp_name, 'r' );
-			if ( $file ) {
-				while ( ( $row = fgetcsv( $file ) ) !== false ) {
-					$to = sanitize_text_field( $row[0] );
-					if ( ! empty( $to ) ) {
-						OM_Twilio_API::send_sms( $to, $message );
-					}
-				}
-				fclose( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
-			}
-		}
-	}
-
-	/**
-	 * AJAX Action 1: Setup the Queue
-=======
 	 * AJAX Action: Setup the Product Filter Queue.
->>>>>>> main
 	 */
 	public function ajax_setup_sms_queue() {
 		check_ajax_referer( 'om_send_bulk_filter', 'om_nonce' );
@@ -409,31 +344,17 @@ class OM_Send_SMS {
 			$target_phones = $map['products'][ $product_id ];
 		}
 
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
-		// Save the queue to the database for the batch processor to pick up!
-=======
 		// Save the queue for the batch processor.
->>>>>>> main
 		$queue_data = array(
 			'message' => $message,
 			'phones'  => $target_phones,
 		);
 		set_transient( 'om_sms_queue_' . get_current_user_id(), $queue_data, HOUR_IN_SECONDS );
 
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
-		// Tell JS how many total messages we have.
-=======
->>>>>>> main
 		wp_send_json_success( array( 'total' => count( $target_phones ) ) );
 	}
 
 	/**
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
-	 * AJAX Action 2: Process a Batch
-	 */
-	public function ajax_process_sms_batch() {
-		check_ajax_referer( 'om_send_bulk_filter', 'om_nonce' );
-=======
 	 * AJAX Action: Setup the CSV Queue.
 	 * Reads the uploaded CSV file and stores phone numbers in a transient queue.
 	 */
@@ -515,7 +436,6 @@ class OM_Send_SMS {
 	 */
 	public function ajax_process_sms_batch() {
 		check_ajax_referer( 'om_process_batch', 'om_nonce' );
->>>>>>> main
 
 		$transient_name = 'om_sms_queue_' . get_current_user_id();
 		$queue_data     = get_transient( $transient_name );
@@ -592,13 +512,6 @@ class OM_Send_SMS {
 			'optimessage-admin-js',
 			'omData',
 			array(
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
-				'ajax_url' => admin_url( 'admin-ajax.php' ),
-				'strings'  => array(
-					'processing'       => __( 'Processing...', 'optimessage' ),
-					'no_customers'     => __( 'No eligible customers found.', 'optimessage' ),
-					'send_sms'         => __( 'Send SMS', 'optimessage' ),
-=======
 				'ajax_url'    => admin_url( 'admin-ajax.php' ),
 				'batch_nonce' => wp_create_nonce( 'om_process_batch' ),
 				'strings'     => array(
@@ -606,7 +519,6 @@ class OM_Send_SMS {
 					'no_customers'     => __( 'No eligible customers found.', 'optimessage' ),
 					'send_sms'         => __( 'Send SMS', 'optimessage' ),
 					'send_csv'         => __( 'Send to CSV Numbers', 'optimessage' ),
->>>>>>> main
 					'error'            => __( 'Error', 'optimessage' ),
 					'sent'             => __( 'Sent', 'optimessage' ),
 					'of'               => __( 'of', 'optimessage' ),
@@ -618,15 +530,6 @@ class OM_Send_SMS {
 					'reachable_all'    => __( 'Total Reachable Customers (All Products)', 'optimessage' ),
 					'reachable_filtered' => __( 'Total Reachable Customers (Filtered)', 'optimessage' ),
 					'send_another'     => __( 'Send Another', 'optimessage' ),
-<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
-				),
-			)
-		);
-	}
-}
-
-new OM_Send_SMS();
-=======
 					'invalid_numbers'  => __( 'Invalid Numbers Skipped', 'optimessage' ),
 					// translators: %d is the number of reachable customers.
 					'validated'        => __( 'Validated! Sending to %d numbers...', 'optimessage' ),
@@ -637,4 +540,3 @@ new OM_Send_SMS();
 }
 
 new OM_Send_SMS();
->>>>>>> main
