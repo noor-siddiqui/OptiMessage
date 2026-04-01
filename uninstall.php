@@ -24,22 +24,22 @@ global $wpdb;
  */
 
 // Drop the SMS history table.
-$table_name = $wpdb->prefix . 'dsn_sms_history';
+$table_name = $wpdb->prefix . 'om_sms_history';
 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names cannot be prepared.
 $wpdb->query( "DROP TABLE IF EXISTS {$table_name}" );
 
 // Delete plugin options from the wp_options table.
-delete_option( 'dsn_db_version' );
-delete_option( 'dsn_twilio_sid' );
-delete_option( 'dsn_twilio_token' );
-delete_option( 'dsn_twilio_from' );
-delete_option( 'dsn_wc_sms_enabled' );
-delete_option( 'dsn_send_no_consent' );
-delete_option( 'dsn_consent_checkout' );
-delete_option( 'dsn_consent_required' );
-delete_option( 'dsn_consent_profile' );
-delete_option( 'dsn_track_number_key' );
-delete_option( 'dsn_track_url_key' );
-delete_option( 'dsn_tpl_placed' );
-delete_option( 'dsn_tpl_completed' );
-delete_option( 'dsn_tpl_refunded' );
+delete_option( 'om_db_version' );
+delete_option( 'om_twilio_sid' );
+delete_option( 'om_twilio_token' );
+delete_option( 'om_twilio_from' );
+delete_option( 'om_wc_sms_enabled' );
+delete_option( 'om_send_no_consent' );
+delete_option( 'om_consent_checkout' );
+delete_option( 'om_consent_required' );
+delete_option( 'om_consent_profile' );
+delete_option( 'om_track_number_key' );
+delete_option( 'om_track_url_key' );
+delete_option( 'om_tpl_placed' );
+delete_option( 'om_tpl_completed' );
+delete_option( 'om_tpl_refunded' );
