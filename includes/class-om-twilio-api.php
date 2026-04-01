@@ -10,10 +10,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class DSN_Twilio_API
+ * Class OM_Twilio_API
  * Handles SMS sending and Twilio API communication.
  */
-class DSN_Twilio_API {
+class OM_Twilio_API {
+
 
 
 	/**
@@ -26,9 +27,9 @@ class DSN_Twilio_API {
 	 * @return bool True on success, false on failure
 	 */
 	public static function send_sms( $to, $message, $user_id = 0, $order_id = 0 ) {
-		$sid   = get_option( 'dsn_twilio_sid' );
-		$token = get_option( 'dsn_twilio_token' );
-		$from  = get_option( 'dsn_twilio_from' );
+		$sid   = get_option( 'om_twilio_sid' );
+		$token = get_option( 'om_twilio_token' );
+		$from  = get_option( 'om_twilio_from' );
 
 		if ( empty( $sid ) || empty( $token ) || empty( $from ) || empty( $to ) || empty( $message ) ) {
 			self::log_sms( $to, '', $message, 'failed', $user_id, $order_id, 'Missing API credentials or empty To/Message' );
@@ -42,7 +43,7 @@ class DSN_Twilio_API {
 		}
 
 		$url         = "https://api.twilio.com/2010-04-01/Accounts/$sid/Messages.json";
-		$webhook_url = rest_url( 'dsn/v1/twilio-webhook' );
+		$webhook_url = rest_url( 'om/v1/twilio-webhook' );
 
 		$args = array(
 			'method'  => 'POST',
@@ -115,7 +116,7 @@ class DSN_Twilio_API {
 	private static function log_sms( $phone_number, $message_sid, $message, $status, $user_id, $order_id, $error_message ) {
 		global $wpdb;
 
-		$table_name = $wpdb->prefix . 'dsn_sms_history';
+		$table_name = $wpdb->prefix . 'om_sms_history';
 
 		$wpdb->insert(
 			$table_name,
@@ -140,8 +141,8 @@ class DSN_Twilio_API {
 	 * @return array|bool Array with 'formatted' and 'valid', or false on API error.
 	 */
 	public static function lookup_phone( $phone, $country_code = '' ) {
-		$sid   = get_option( 'dsn_twilio_sid' );
-		$token = get_option( 'dsn_twilio_token' );
+		$sid   = get_option( 'om_twilio_sid' );
+		$token = get_option( 'om_twilio_token' );
 
 		if ( empty( $sid ) || empty( $token ) || empty( $phone ) ) {
 			return false;

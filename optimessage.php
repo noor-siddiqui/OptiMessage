@@ -7,22 +7,22 @@
  * GitHub Plugin URI: https://github.com/noor-siddiqui/OptiMessage
  *
  * @package OptiMessage
- * @author Noor Nabiul Alam Siddiqui <siddiqui.sazal@gmail.com>
+ * @author  Noor Nabiul Alam Siddiqui <siddiqui.sazal@gmail.com>
  * @license https://github.com/noor-siddiqui/OptiMessage/blob/main/LICENSE GNU General Public License v3.0
- * @link https://github.com/noor-siddiqui/OptiMessage
- * @since 0.1.0_beta
+ * @link    https://github.com/noor-siddiqui/OptiMessage
+ * @since   0.1.0_beta
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-define( 'DSN_VERSION', '0.1.0_beta' );
-define( 'DSN_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'DSN_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'OM_VERSION', '0.1.0_beta' );
+define( 'OM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'OM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 // 1. Require the newly named class file.
-require_once DSN_PLUGIN_DIR . 'includes/class-optimessage.php';
+require_once OM_PLUGIN_DIR . 'includes/class-optimessage.php';
 
 // 2. Hook activation using the new class name.
 register_activation_hook( __FILE__, array( 'OptiMessage', 'install' ) );
@@ -36,8 +36,8 @@ function optimessage_init() {
 add_action( 'plugins_loaded', 'optimessage_init' );
 
 // 3. Setup automatic plugin updates using Plugin Update Checker (PUC).
-if ( file_exists( DSN_PLUGIN_DIR . 'plugin-update-checker/plugin-update-checker.php' ) ) {
-	include_once DSN_PLUGIN_DIR . 'plugin-update-checker/plugin-update-checker.php';
+if ( file_exists( OM_PLUGIN_DIR . 'plugin-update-checker/plugin-update-checker.php' ) ) {
+	include_once OM_PLUGIN_DIR . 'plugin-update-checker/plugin-update-checker.php';
 
 	try {
 		$my_update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
