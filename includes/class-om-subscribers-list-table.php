@@ -19,7 +19,6 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
  */
 class OM_Subscribers_List_Table extends WP_List_Table {
 
-
 	/**
 	 * Constructor.
 	 */
@@ -95,17 +94,17 @@ class OM_Subscribers_List_Table extends WP_List_Table {
 		);
 
 		// Handle Search natively across Core and Meta.
-     // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is not required for read-only search operations.
-		if ( isset( $_POST['s'] ) && ! empty( $_POST['s'] ) ) {
-         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is not required for read-only search operations.
-			$search = sanitize_text_field( wp_unslash( $_POST['s'] ) );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only search parameter for WP_List_Table.
+		$search = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '';
+
+		if ( ! empty( $search ) ) {
 
 			if ( is_email( $search ) ) {
 				$args['search']         = '*' . $search . '*';
 				$args['search_columns'] = array( 'user_email', 'user_login' );
 			} elseif ( preg_match( '/^[0-9\+\-\s\(\)]+$/', $search ) ) {
 				$clean              = preg_replace( '/[^0-9]/', '', $search );
-				$args['meta_query'] = array(
+				$args['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Necessary for phone search.
 					'relation' => 'OR',
 					array(
 						'key'     => 'billing_phone',
@@ -148,20 +147,24 @@ class OM_Subscribers_List_Table extends WP_List_Table {
 					);
 				}
 				if ( count( $meta_query ) > 1 ) {
+					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Necessary for name search.
 					$args['meta_query'] = $meta_query;
 				}
 			}
 		}
 
 		// Handle Sorting.
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only sort parameters, standard WP_List_Table pattern.
 		$orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'ID';
-		$order = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'DESC';
+		$order   = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'DESC';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$args['order'] = $order;
 
 		// If sorting by a user meta field.
 		$meta_keys = array( 'first_name', 'billing_phone', '_om_phone_valid', 'billing_address_1', 'billing_state', 'optimessage/sms-consent' );
-		if ( in_array( $orderby, $meta_keys ) ) {
+		if ( in_array( $orderby, $meta_keys, true ) ) {
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Required for sorting by user meta.
 			$args['meta_key'] = $orderby;
 			$args['orderby']  = 'meta_value';
 		} else {
@@ -173,6 +176,11 @@ class OM_Subscribers_List_Table extends WP_List_Table {
 
 		$this->items = $user_query->get_results();
 		$total_items = $user_query->get_total();
+
+		// Prime the meta cache to avoid N+1 queries during column rendering.
+		if ( ! empty( $this->items ) ) {
+			update_meta_cache( 'user', wp_list_pluck( $this->items, 'ID' ) );
+		}
 
 		$this->set_pagination_args(
 			array(
@@ -208,31 +216,17 @@ class OM_Subscribers_List_Table extends WP_List_Table {
 			case 'valid_phone':
 				$phone = get_user_meta( $item->ID, 'billing_phone', true );
 				if ( empty( $phone ) ) {
-					return '<span style="color:grey;">' . __( 'No Number', 'optimessage' ) . '</span>';
+					return '<span style="color:grey;">' . esc_html__( 'No Number', 'optimessage' ) . '</span>';
 				}
 
 				$status = get_user_meta( $item->ID, '_om_phone_valid', true );
 				if ( '1' === $status ) {
-					return '<span style="color:green;font-weight:bold;">' . __( 'Yes', 'optimessage' ) . '</span>';
+					return '<span style="color:green;font-weight:bold;">' . esc_html__( 'Yes', 'optimessage' ) . '</span>';
 				} elseif ( '-1' === $status ) {
-					return '<span style="color:red;font-weight:bold;">' . __( 'No', 'optimessage' ) . '</span>';
+					return '<span style="color:red;font-weight:bold;">' . esc_html__( 'No', 'optimessage' ) . '</span>';
 				}
 
-				// If not validated yet, do it on the fly.
-				$country = get_user_meta( $item->ID, 'billing_country', true );
-				$lookup  = OM_Twilio_API::lookup_phone( $phone, $country );
-				if ( is_array( $lookup ) ) {
-					if ( $lookup['valid'] ) {
-						update_user_meta( $item->ID, 'billing_phone', $lookup['formatted'] );
-						update_user_meta( $item->ID, '_om_phone_valid', '1' );
-						return '<span style="color:green;font-weight:bold;">' . __( 'Yes', 'optimessage' ) . '</span>';
-					} else {
-						update_user_meta( $item->ID, '_om_phone_valid', '-1' );
-						return '<span style="color:red;font-weight:bold;">' . __( 'No', 'optimessage' ) . '</span>';
-					}
-				}
-
-				return '<span style="color:orange;">' . __( 'Pending', 'optimessage' ) . '</span>';
+				return '<span style="color:orange;">' . esc_html__( 'Not Checked', 'optimessage' ) . '</span>';
 
 			case 'address':
 				return esc_html( get_user_meta( $item->ID, 'billing_address_1', true ) );
@@ -242,12 +236,13 @@ class OM_Subscribers_List_Table extends WP_List_Table {
 
 			case 'consent':
 				$consent      = get_user_meta( $item->ID, 'optimessage/sms-consent', true );
-				$is_consented = ( '1' === $consent || 'yes' === strtolower( $consent ) || 'on' === strtolower( $consent ) || 'true' === strtolower( $consent ) );
+				$consent_str  = strtolower( (string) $consent );
+				$is_consented = ( '1' === $consent || 'yes' === $consent_str || 'on' === $consent_str || 'true' === $consent_str );
 
 				if ( $is_consented ) {
-					return '<span style="color:green;font-weight:bold;">' . __( 'Opted In', 'optimessage' ) . '</span>';
+					return '<span style="color:green;font-weight:bold;">' . esc_html__( 'Opted In', 'optimessage' ) . '</span>';
 				} else {
-					return '<span style="color:grey;">' . __( 'No Consent', 'optimessage' ) . '</span>';
+					return '<span style="color:grey;">' . esc_html__( 'No Consent', 'optimessage' ) . '</span>';
 				}
 
 			default:

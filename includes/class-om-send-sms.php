@@ -32,6 +32,10 @@ class OM_Send_SMS {
 	 * Render the send SMS page.
 	 */
 	public function render() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+
 		$send_type = isset( $_GET['send_type'] ) ? sanitize_text_field( wp_unslash( $_GET['send_type'] ) ) : 'single';
 
 		?>

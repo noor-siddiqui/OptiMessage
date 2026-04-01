@@ -19,7 +19,6 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
  */
 class OM_Guest_Customers_List_Table extends WP_List_Table {
 
-
 	/**
 	 * Constructor.
 	 */
@@ -70,6 +69,40 @@ class OM_Guest_Customers_List_Table extends WP_List_Table {
 	}
 
 	/**
+	 * Render dropdown filters above the table.
+	 *
+	 * @param string $which Top or bottom.
+	 */
+	protected function extra_tablenav( $which ) {
+		if ( 'top' !== $which ) {
+			return;
+		}
+
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filter parameters.
+		$filter_valid   = isset( $_REQUEST['om_valid'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['om_valid'] ) ) : '';
+		$filter_consent = isset( $_REQUEST['om_consent'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['om_consent'] ) ) : '';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		?>
+		<div class="alignleft actions">
+			<select name="om_valid">
+				<option value=""><?php esc_html_e( 'All Phone Status', 'optimessage' ); ?></option>
+				<option value="valid" <?php selected( $filter_valid, 'valid' ); ?>><?php esc_html_e( 'Valid', 'optimessage' ); ?></option>
+				<option value="invalid" <?php selected( $filter_valid, 'invalid' ); ?>><?php esc_html_e( 'Invalid', 'optimessage' ); ?></option>
+				<option value="unchecked" <?php selected( $filter_valid, 'unchecked' ); ?>><?php esc_html_e( 'Not Checked', 'optimessage' ); ?></option>
+			</select>
+
+			<select name="om_consent">
+				<option value=""><?php esc_html_e( 'All Consent', 'optimessage' ); ?></option>
+				<option value="yes" <?php selected( $filter_consent, 'yes' ); ?>><?php esc_html_e( 'Opted In', 'optimessage' ); ?></option>
+				<option value="no" <?php selected( $filter_consent, 'no' ); ?>><?php esc_html_e( 'No Consent', 'optimessage' ); ?></option>
+			</select>
+
+			<?php submit_button( esc_html__( 'Filter', 'optimessage' ), '', 'filter_action', false ); ?>
+		</div>
+		<?php
+	}
+
+	/**
 	 * Prepare items.
 	 */
 	public function prepare_items() {
@@ -89,58 +122,100 @@ class OM_Guest_Customers_List_Table extends WP_List_Table {
 			'paginate'    => true,
 		);
 
-		// Handle Search.
-     // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is not required for read-only search operations.
-		if ( isset( $_POST['s'] ) && ! empty( $_POST['s'] ) ) {
+		// Handle Search — use WooCommerce's native search which works with both HPOS and legacy.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only search parameter for WP_List_Table.
+		$search = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '';
 
-         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is not required for read-only search operations.
-			$search = sanitize_text_field( wp_unslash( $_POST['s'] ) );
-
+		if ( ! empty( $search ) ) {
 			if ( is_email( $search ) ) {
 				$args['billing_email'] = $search;
-			} elseif ( preg_match( '/^[0-9\+\-\s\(\)]+$/', $search ) ) {
-				$clean               = preg_replace( '/[^0-9]/', '', $search );
-				$args['field_query'] = array(
-					'relation' => 'OR',
-					array(
-						'field'   => 'billing_phone',
-						'value'   => $search,
-						'compare' => 'LIKE',
-					),
-					array(
-						'field'   => 'billing_phone',
-						'value'   => $clean,
-						'compare' => 'LIKE',
-					),
-				);
 			} else {
-				$terms       = explode( ' ', $search );
-				$field_query = array( 'relation' => 'OR' );
-				foreach ( $terms as $term ) {
-					$term = trim( $term );
-					if ( empty( $term ) ) {
-						continue;
-					}
-					$field_query[] = array(
-						'field'   => 'billing_first_name',
-						'value'   => $term,
-						'compare' => 'LIKE',
-					);
-					$field_query[] = array(
-						'field'   => 'billing_last_name',
-						'value'   => $term,
-						'compare' => 'LIKE',
-					);
-				}
-				if ( count( $field_query ) > 1 ) {
-					$args['field_query'] = $field_query;
-				}
+				// WooCommerce 's' parameter searches across billing name, email, phone, and order ID.
+				$args['s'] = $search;
 			}
 		}
 
-		$orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'date';
+		// Handle dropdown filters.
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filter parameters.
+		$filter_valid   = isset( $_REQUEST['om_valid'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['om_valid'] ) ) : '';
+		$filter_consent = isset( $_REQUEST['om_consent'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['om_consent'] ) ) : '';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-		$order = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'DESC';
+		$meta_query = array();
+
+		if ( 'valid' === $filter_valid ) {
+			$meta_query[] = array(
+				'key'   => '_om_phone_valid',
+				'value' => '1',
+			);
+		} elseif ( 'invalid' === $filter_valid ) {
+			$meta_query[] = array(
+				'key'   => '_om_phone_valid',
+				'value' => '-1',
+			);
+		} elseif ( 'unchecked' === $filter_valid ) {
+			$meta_query[] = array(
+				'key'     => '_om_phone_valid',
+				'compare' => 'NOT EXISTS',
+			);
+		}
+
+		if ( 'yes' === $filter_consent ) {
+			$meta_query[] = array(
+				'relation' => 'OR',
+				array(
+					'key'   => '_om_sms_consent',
+					'value' => '1',
+				),
+				array(
+					'key'   => '_wc_other/om/sms_consent',
+					'value' => '1',
+				),
+				array(
+					'key'   => 'om/sms_consent',
+					'value' => '1',
+				),
+			);
+		} elseif ( 'no' === $filter_consent ) {
+			$meta_query[] = array(
+				'relation' => 'AND',
+				array(
+					'relation' => 'OR',
+					array(
+						'key'     => '_om_sms_consent',
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => '_om_sms_consent',
+						'value'   => array( '0', 'no', '' ),
+						'compare' => 'IN',
+					),
+				),
+				array(
+					'relation' => 'OR',
+					array(
+						'key'     => '_wc_other/om/sms_consent',
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => '_wc_other/om/sms_consent',
+						'value'   => array( '0', 'no', '' ),
+						'compare' => 'IN',
+					),
+				),
+			);
+		}
+
+		if ( ! empty( $meta_query ) ) {
+			$meta_query['relation'] = 'AND';
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Required for phone/consent filtering.
+			$args['meta_query'] = $meta_query;
+		}
+
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only sort parameters, standard WP_List_Table pattern.
+		$orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'date';
+		$order   = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'DESC';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$args['orderby'] = $orderby;
 		$args['order']   = $order;
@@ -181,32 +256,17 @@ class OM_Guest_Customers_List_Table extends WP_List_Table {
 			case 'valid_phone':
 				$phone = $item->get_billing_phone();
 				if ( empty( $phone ) ) {
-					return '<span style="color:grey;">' . __( 'No Number', 'optimessage' ) . '</span>';
+					return '<span style="color:grey;">' . esc_html__( 'No Number', 'optimessage' ) . '</span>';
 				}
 
 				$status = $item->get_meta( '_om_phone_valid', true );
 				if ( '1' === $status ) {
-					return '<span style="color:green;font-weight:bold;">' . __( 'Yes', 'optimessage' ) . '</span>';
+					return '<span style="color:green;font-weight:bold;">' . esc_html__( 'Yes', 'optimessage' ) . '</span>';
 				} elseif ( '-1' === $status ) {
-					return '<span style="color:red;font-weight:bold;">' . __( 'No', 'optimessage' ) . '</span>';
+					return '<span style="color:red;font-weight:bold;">' . esc_html__( 'No', 'optimessage' ) . '</span>';
 				}
 
-				$country = $item->get_billing_country();
-				$lookup  = OM_Twilio_API::lookup_phone( $phone, $country );
-				if ( is_array( $lookup ) ) {
-					if ( $lookup['valid'] ) {
-						$item->update_meta_data( '_om_phone_valid', '1' );
-						$item->set_billing_phone( $lookup['formatted'] );
-						$item->save();
-						return '<span style="color:green;font-weight:bold;">' . __( 'Yes', 'optimessage' ) . '</span>';
-					} else {
-						$item->update_meta_data( '_om_phone_valid', '-1' );
-						$item->save();
-						return '<span style="color:red;font-weight:bold;">' . __( 'No', 'optimessage' ) . '</span>';
-					}
-				}
-
-				return '<span style="color:orange;">' . __( 'Pending', 'optimessage' ) . '</span>';
+				return '<span style="color:orange;">' . esc_html__( 'Not Checked', 'optimessage' ) . '</span>';
 
 			case 'address':
 				return esc_html( $item->get_billing_address_1() );
@@ -222,12 +282,13 @@ class OM_Guest_Customers_List_Table extends WP_List_Table {
 				if ( '' === $consent || null === $consent ) {
 					$consent = $item->get_meta( '_om_sms_consent', true );
 				}
-				$is_consented = ( true === $consent || '1' === $consent || 'yes' === strtolower( $consent ) || 'on' === strtolower( $consent ) || 'true' === strtolower( $consent ) );
+				$consent_str  = strtolower( (string) $consent );
+				$is_consented = ( true === $consent || '1' === $consent || 'yes' === $consent_str || 'on' === $consent_str || 'true' === $consent_str );
 
 				if ( $is_consented ) {
-					return '<span style="color:green;font-weight:bold;">' . __( 'Opted In', 'optimessage' ) . '</span>';
+					return '<span style="color:green;font-weight:bold;">' . esc_html__( 'Opted In', 'optimessage' ) . '</span>';
 				} else {
-					return '<span style="color:grey;">' . __( 'No Consent', 'optimessage' ) . '</span>';
+					return '<span style="color:grey;">' . esc_html__( 'No Consent', 'optimessage' ) . '</span>';
 				}
 
 			default:
