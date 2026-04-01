@@ -86,6 +86,7 @@ class OM_History {
 			</thead>
 			<tbody>
 		<?php if ( $results ) : ?>
+<<<<<<< perf/hoist-get-option-sms-history-11636205782672209129
 			<?php
 			$date_format     = get_option( 'date_format' );
 			$time_format     = get_option( 'time_format' );
@@ -95,6 +96,12 @@ class OM_History {
 						<tr>
 							<td><?php echo esc_html( $row->id ); ?></td>
 							<td><?php echo esc_html( wp_date( $datetime_format, strtotime( $row->sent_at ) ) ); ?></td>
+=======
+			<?php foreach ( $results as $row ) : ?>
+						<tr>
+							<td><?php echo esc_html( $row->id ); ?></td>
+							<td><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $row->sent_at ) ) ); ?></td>
+>>>>>>> main
 							<td>
 				<?php echo esc_html( $row->phone_number ); ?>
 				<?php if ( $row->user_id ) : ?>
