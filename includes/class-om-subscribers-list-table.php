@@ -14,10 +14,11 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
 }
 
 /**
- * Class DSN_Subscribers_List_Table
+ * Class OM_Subscribers_List_Table
  * Table class for subscribers.
  */
-class DSN_Subscribers_List_Table extends WP_List_Table {
+class OM_Subscribers_List_Table extends WP_List_Table {
+
 
 	/**
 	 * Constructor.
@@ -25,8 +26,8 @@ class DSN_Subscribers_List_Table extends WP_List_Table {
 	public function __construct() {
 		parent::__construct(
 			array(
-				'singular' => __( 'Subscriber', 'desishad-sms-notifier' ),
-				'plural'   => __( 'Subscribers', 'desishad-sms-notifier' ),
+				'singular' => __( 'Subscriber', 'optimessage' ),
+				'plural'   => __( 'Subscribers', 'optimessage' ),
 				'ajax'     => false,
 			)
 		);
@@ -36,7 +37,7 @@ class DSN_Subscribers_List_Table extends WP_List_Table {
 	 * Message when no items found.
 	 */
 	public function no_items() {
-		esc_html_e( 'No subscribers found.', 'desishad-sms-notifier' );
+		esc_html_e( 'No subscribers found.', 'optimessage' );
 	}
 
 	/**
@@ -46,13 +47,13 @@ class DSN_Subscribers_List_Table extends WP_List_Table {
 	 */
 	public function get_columns() {
 		return array(
-			'name'        => esc_html__( 'Full Name', 'desishad-sms-notifier' ),
-			'email'       => esc_html__( 'Email', 'desishad-sms-notifier' ),
-			'phone'       => esc_html__( 'Phone', 'desishad-sms-notifier' ),
-			'valid_phone' => esc_html__( 'Valid Phone?', 'desishad-sms-notifier' ),
-			'address'     => esc_html__( 'Address', 'desishad-sms-notifier' ),
-			'state'       => esc_html__( 'State', 'desishad-sms-notifier' ),
-			'consent'     => esc_html__( 'SMS Consent', 'desishad-sms-notifier' ),
+			'name'        => esc_html__( 'Full Name', 'optimessage' ),
+			'email'       => esc_html__( 'Email', 'optimessage' ),
+			'phone'       => esc_html__( 'Phone', 'optimessage' ),
+			'valid_phone' => esc_html__( 'Valid Phone?', 'optimessage' ),
+			'address'     => esc_html__( 'Address', 'optimessage' ),
+			'state'       => esc_html__( 'State', 'optimessage' ),
+			'consent'     => esc_html__( 'SMS Consent', 'optimessage' ),
 		);
 	}
 
@@ -66,10 +67,10 @@ class DSN_Subscribers_List_Table extends WP_List_Table {
 			'name'        => array( 'first_name', false ),
 			'email'       => array( 'email', false ),
 			'phone'       => array( 'billing_phone', false ),
-			'valid_phone' => array( '_dsn_phone_valid', false ),
+			'valid_phone' => array( '_om_phone_valid', false ),
 			'address'     => array( 'billing_address_1', false ),
 			'state'       => array( 'billing_state', false ),
-			'consent'     => array( 'desishad/sms-consent', false ),
+			'consent'     => array( 'optimessage/sms-consent', false ),
 		);
 	}
 
@@ -94,9 +95,9 @@ class DSN_Subscribers_List_Table extends WP_List_Table {
 		);
 
 		// Handle Search natively across Core and Meta.
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is not required for read-only search operations.
+     // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is not required for read-only search operations.
 		if ( isset( $_POST['s'] ) && ! empty( $_POST['s'] ) ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is not required for read-only search operations.
+         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is not required for read-only search operations.
 			$search = sanitize_text_field( wp_unslash( $_POST['s'] ) );
 
 			if ( is_email( $search ) ) {
@@ -159,7 +160,7 @@ class DSN_Subscribers_List_Table extends WP_List_Table {
 		$args['order'] = $order;
 
 		// If sorting by a user meta field.
-		$meta_keys = array( 'first_name', 'billing_phone', '_dsn_phone_valid', 'billing_address_1', 'billing_state', 'desishad/sms-consent' );
+		$meta_keys = array( 'first_name', 'billing_phone', '_om_phone_valid', 'billing_address_1', 'billing_state', 'optimessage/sms-consent' );
 		if ( in_array( $orderby, $meta_keys ) ) {
 			$args['meta_key'] = $orderby;
 			$args['orderby']  = 'meta_value';
@@ -185,8 +186,8 @@ class DSN_Subscribers_List_Table extends WP_List_Table {
 	/**
 	 * Column default rendering.
 	 *
-	 * @param object $item        The item.
-	 * @param string $column_name Column name.
+	 * @param  object $item        The item.
+	 * @param  string $column_name Column name.
 	 * @return string
 	 */
 	public function column_default( $item, $column_name ) {
@@ -207,31 +208,31 @@ class DSN_Subscribers_List_Table extends WP_List_Table {
 			case 'valid_phone':
 				$phone = get_user_meta( $item->ID, 'billing_phone', true );
 				if ( empty( $phone ) ) {
-					return '<span style="color:grey;">' . __( 'No Number', 'desishad-sms-notifier' ) . '</span>';
+					return '<span style="color:grey;">' . __( 'No Number', 'optimessage' ) . '</span>';
 				}
 
-				$status = get_user_meta( $item->ID, '_dsn_phone_valid', true );
+				$status = get_user_meta( $item->ID, '_om_phone_valid', true );
 				if ( '1' === $status ) {
-					return '<span style="color:green;font-weight:bold;">' . __( 'Yes', 'desishad-sms-notifier' ) . '</span>';
+					return '<span style="color:green;font-weight:bold;">' . __( 'Yes', 'optimessage' ) . '</span>';
 				} elseif ( '-1' === $status ) {
-					return '<span style="color:red;font-weight:bold;">' . __( 'No', 'desishad-sms-notifier' ) . '</span>';
+					return '<span style="color:red;font-weight:bold;">' . __( 'No', 'optimessage' ) . '</span>';
 				}
 
 				// If not validated yet, do it on the fly.
 				$country = get_user_meta( $item->ID, 'billing_country', true );
-				$lookup  = DSN_Twilio_API::lookup_phone( $phone, $country );
+				$lookup  = OM_Twilio_API::lookup_phone( $phone, $country );
 				if ( is_array( $lookup ) ) {
 					if ( $lookup['valid'] ) {
 						update_user_meta( $item->ID, 'billing_phone', $lookup['formatted'] );
-						update_user_meta( $item->ID, '_dsn_phone_valid', '1' );
-						return '<span style="color:green;font-weight:bold;">' . __( 'Yes', 'desishad-sms-notifier' ) . '</span>';
+						update_user_meta( $item->ID, '_om_phone_valid', '1' );
+						return '<span style="color:green;font-weight:bold;">' . __( 'Yes', 'optimessage' ) . '</span>';
 					} else {
-						update_user_meta( $item->ID, '_dsn_phone_valid', '-1' );
-						return '<span style="color:red;font-weight:bold;">' . __( 'No', 'desishad-sms-notifier' ) . '</span>';
+						update_user_meta( $item->ID, '_om_phone_valid', '-1' );
+						return '<span style="color:red;font-weight:bold;">' . __( 'No', 'optimessage' ) . '</span>';
 					}
 				}
 
-				return '<span style="color:orange;">' . __( 'Pending', 'desishad-sms-notifier' ) . '</span>';
+				return '<span style="color:orange;">' . __( 'Pending', 'optimessage' ) . '</span>';
 
 			case 'address':
 				return esc_html( get_user_meta( $item->ID, 'billing_address_1', true ) );
@@ -240,13 +241,13 @@ class DSN_Subscribers_List_Table extends WP_List_Table {
 				return esc_html( get_user_meta( $item->ID, 'billing_state', true ) );
 
 			case 'consent':
-				$consent      = get_user_meta( $item->ID, 'desishad/sms-consent', true );
+				$consent      = get_user_meta( $item->ID, 'optimessage/sms-consent', true );
 				$is_consented = ( '1' === $consent || 'yes' === strtolower( $consent ) || 'on' === strtolower( $consent ) || 'true' === strtolower( $consent ) );
 
 				if ( $is_consented ) {
-					return '<span style="color:green;font-weight:bold;">' . __( 'Opted In', 'desishad-sms-notifier' ) . '</span>';
+					return '<span style="color:green;font-weight:bold;">' . __( 'Opted In', 'optimessage' ) . '</span>';
 				} else {
-					return '<span style="color:grey;">' . __( 'No Consent', 'desishad-sms-notifier' ) . '</span>';
+					return '<span style="color:grey;">' . __( 'No Consent', 'optimessage' ) . '</span>';
 				}
 
 			default:

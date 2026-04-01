@@ -10,10 +10,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class DSN_Webhook
+ * Class OM_Webhook
  * Handles incoming webhooks.
  */
-class DSN_Webhook {
+class OM_Webhook {
+
 
 	/**
 	 * Constructor.
@@ -27,7 +28,7 @@ class DSN_Webhook {
 	 */
 	public function register_routes() {
 		register_rest_route(
-			'dsn/v1',
+			'om/v1',
 			'/twilio-webhook',
 			array(
 				'methods'             => 'POST',
@@ -40,7 +41,7 @@ class DSN_Webhook {
 	/**
 	 * Handle webhook request.
 	 *
-	 * @param WP_REST_Request $request Request object.
+	 * @param  WP_REST_Request $request Request object.
 	 * @return WP_REST_Response
 	 */
 	public function handle_webhook( WP_REST_Request $request ) {
@@ -53,7 +54,7 @@ class DSN_Webhook {
 		$status      = isset( $params['MessageStatus'] ) ? sanitize_text_field( $params['MessageStatus'] ) : '';
 
 		if ( ! empty( $message_sid ) && ! empty( $status ) ) {
-			$table_name = $wpdb->prefix . 'dsn_sms_history';
+			$table_name = $wpdb->prefix . 'om_sms_history';
 
 			// Update the status in our history table.
 			$wpdb->update(
@@ -71,4 +72,4 @@ class DSN_Webhook {
 	}
 }
 
-new DSN_Webhook();
+new OM_Webhook();
