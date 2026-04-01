@@ -10,10 +10,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class DSN_WooCommerce
+ * Class OM_WooCommerce
  * Handles WooCommerce hooks for orders and checkout.
  */
-class DSN_WooCommerce {
+class OM_WooCommerce {
+
 
 	/**
 	 * Constructor.
@@ -40,16 +41,16 @@ class DSN_WooCommerce {
 	 * Register checkout fields.
 	 */
 	public function register_checkout_fields() {
-		if ( ! get_option( 'dsn_consent_checkout', 0 ) ) {
+		if ( ! get_option( 'om_consent_checkout', 0 ) ) {
 			return; // Disabled in settings.
 		}
 
 		if ( function_exists( 'woocommerce_register_additional_checkout_field' ) ) {
-			$is_required = get_option( 'dsn_consent_required', 0 ) ? true : false;
+			$is_required = get_option( 'om_consent_required', 0 ) ? true : false;
 			woocommerce_register_additional_checkout_field(
 				array(
-					'id'       => 'dsn/sms_consent',
-					'label'    => esc_html__( 'I want to receive SMS notifications about my order and promotions.', 'desishad-sms-notifier' ),
+					'id'       => 'om/sms_consent',
+					'label'    => esc_html__( 'I want to receive SMS notifications about my order and promotions.', 'optimessage' ),
 					'location' => 'contact',
 					'type'     => 'checkbox',
 					'required' => $is_required,
@@ -62,21 +63,21 @@ class DSN_WooCommerce {
 	 * Legacy add checkout consent checkbox.
 	 */
 	public function legacy_add_checkout_consent_checkbox() {
-		if ( ! get_option( 'dsn_consent_checkout', 0 ) || function_exists( 'woocommerce_register_additional_checkout_field' ) ) {
+		if ( ! get_option( 'om_consent_checkout', 0 ) || function_exists( 'woocommerce_register_additional_checkout_field' ) ) {
 			return;
 		}
 
-		$is_required = get_option( 'dsn_consent_required', 0 ) ? true : false;
+		$is_required = get_option( 'om_consent_required', 0 ) ? true : false;
 
 		woocommerce_form_field(
-			'dsn_sms_consent',
+			'om_sms_consent',
 			array(
 				'type'     => 'checkbox',
-				'class'    => array( 'form-row dsn-sms-consent' ),
+				'class'    => array( 'form-row om-sms-consent' ),
 				'required' => $is_required,
-				'label'    => esc_html__( 'I want to receive SMS notifications about my order.', 'desishad-sms-notifier' ),
+				'label'    => esc_html__( 'I want to receive SMS notifications about my order.', 'optimessage' ),
 			),
-			WC()->checkout->get_value( 'dsn_sms_consent' )
+			WC()->checkout->get_value( 'om_sms_consent' )
 		);
 	}
 
@@ -84,14 +85,14 @@ class DSN_WooCommerce {
 	 * Legacy checkout process validation.
 	 */
 	public function legacy_checkout_process() {
-		if ( ! function_exists( 'woocommerce_register_additional_checkout_field' ) && get_option( 'dsn_consent_checkout', 0 ) && get_option( 'dsn_consent_required', 0 ) ) {
+		if ( ! function_exists( 'woocommerce_register_additional_checkout_field' ) && get_option( 'om_consent_checkout', 0 ) && get_option( 'om_consent_required', 0 ) ) {
 
 			// Safely retrieve and sanitize the POST variable before checking it.
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by WooCommerce core during the checkout process.
-			$sms_consent = isset( $_POST['dsn_sms_consent'] ) ? sanitize_text_field( wp_unslash( $_POST['dsn_sms_consent'] ) ) : '';
+         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by WooCommerce core during the checkout process.
+			$sms_consent = isset( $_POST['om_sms_consent'] ) ? sanitize_text_field( wp_unslash( $_POST['om_sms_consent'] ) ) : '';
 
 			if ( empty( $sms_consent ) ) {
-				wc_add_notice( esc_html__( 'Please check the SMS consent box to proceed.', 'desishad-sms-notifier' ), 'error' );
+				wc_add_notice( esc_html__( 'Please check the SMS consent box to proceed.', 'optimessage' ), 'error' );
 			}
 		}
 	}
@@ -103,7 +104,7 @@ class DSN_WooCommerce {
 	 * @param array    $request The request array.
 	 */
 	public function block_save_checkout_consent( $order, $request ) {
-		if ( ! get_option( 'dsn_consent_checkout', 0 ) ) {
+		if ( ! get_option( 'om_consent_checkout', 0 ) ) {
 			return;
 		}
 		$this->run_twilio_and_user_meta( $order );
@@ -116,18 +117,18 @@ class DSN_WooCommerce {
 	 * @param array $data     The posted data.
 	 */
 	public function legacy_save_checkout_consent( $order_id, $data ) {
-		if ( ! get_option( 'dsn_consent_checkout', 0 ) ) {
+		if ( ! get_option( 'om_consent_checkout', 0 ) ) {
 			return;
 		}
 
 		if ( ! function_exists( 'woocommerce_register_additional_checkout_field' ) ) {
             // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified by WooCommerce core during the checkout process.
-			$sms_consent_raw = isset( $_POST['dsn_sms_consent'] ) ? sanitize_text_field( wp_unslash( $_POST['dsn_sms_consent'] ) ) : '';
+			$sms_consent_raw = isset( $_POST['om_sms_consent'] ) ? sanitize_text_field( wp_unslash( $_POST['om_sms_consent'] ) ) : '';
 
 			// Determine 'yes' or 'no' based on the sanitized input.
 			$consent = ! empty( $sms_consent_raw ) ? 'yes' : 'no';
 
-			update_post_meta( $order_id, '_dsn_sms_consent', $consent );
+			update_post_meta( $order_id, '_om_sms_consent', $consent );
 		}
 
 		$order = wc_get_order( $order_id );
@@ -146,29 +147,29 @@ class DSN_WooCommerce {
 
 		if ( $user_id ) {
 			$consent = $this->has_consent( $order ) ? '1' : '0';
-			update_user_meta( $user_id, 'desishad/sms-consent', $consent );
+			update_user_meta( $user_id, 'optimessage/sms-consent', $consent );
 		}
 
 		$phone = $order->get_billing_phone();
 		if ( ! empty( $phone ) ) {
 			$country = $order->get_billing_country();
-			$lookup  = DSN_Twilio_API::lookup_phone( $phone, $country );
+			$lookup  = OM_Twilio_API::lookup_phone( $phone, $country );
 			if ( is_array( $lookup ) ) {
 				if ( $lookup['valid'] ) {
 					$order->set_billing_phone( $lookup['formatted'] );
-					$order->update_meta_data( '_dsn_phone_valid', '1' );
+					$order->update_meta_data( '_om_phone_valid', '1' );
 					$order->save();
 
 					if ( $user_id ) {
 						update_user_meta( $user_id, 'billing_phone', $lookup['formatted'] );
-						update_user_meta( $user_id, '_dsn_phone_valid', '1' );
+						update_user_meta( $user_id, '_om_phone_valid', '1' );
 					}
 				} else {
-					$order->update_meta_data( '_dsn_phone_valid', '-1' );
+					$order->update_meta_data( '_om_phone_valid', '-1' );
 					$order->save();
 
 					if ( $user_id ) {
-						update_user_meta( $user_id, '_dsn_phone_valid', '-1' );
+						update_user_meta( $user_id, '_om_phone_valid', '-1' );
 					}
 				}
 			}
@@ -178,20 +179,20 @@ class DSN_WooCommerce {
 	/**
 	 * Check if customer consented for this specific order or via their profile.
 	 *
-	 * @param WC_Order $order The order object.
+	 * @param  WC_Order $order The order object.
 	 * @return bool
 	 */
 	private function has_consent( $order ) {
-		if ( get_option( 'dsn_send_no_consent', 0 ) ) {
+		if ( get_option( 'om_send_no_consent', 0 ) ) {
 			return true;
 		}
 
-		$order_consent = $order->get_meta( '_wc_other/dsn/sms_consent' );
+		$order_consent = $order->get_meta( '_wc_other/om/sms_consent' );
 		if ( '' === $order_consent || null === $order_consent ) {
-			$order_consent = $order->get_meta( 'dsn/sms_consent' );
+			$order_consent = $order->get_meta( 'om/sms_consent' );
 		}
 		if ( '' === $order_consent || null === $order_consent ) {
-			$order_consent = $order->get_meta( '_dsn_sms_consent' );
+			$order_consent = $order->get_meta( '_om_sms_consent' );
 		}
 
 		if ( true === $order_consent || '1' === $order_consent || 'yes' === $order_consent ) {
@@ -204,7 +205,7 @@ class DSN_WooCommerce {
 		// Fallback to user meta.
 		$user_id = $order->get_user_id();
 		if ( $user_id ) {
-			$user_consent = get_user_meta( $user_id, 'desishad/sms-consent', true );
+			$user_consent = get_user_meta( $user_id, 'optimessage/sms-consent', true );
 			return ( '1' == $user_consent || 'yes' === strtolower( $user_consent ) || 'on' === strtolower( $user_consent ) || 'true' === strtolower( $user_consent ) );
 		}
 
@@ -222,7 +223,7 @@ class DSN_WooCommerce {
 			return;
 		}
 
-		$template = get_option( 'dsn_tpl_placed' );
+		$template = get_option( 'om_tpl_placed' );
 		$this->send_notification( $order, $template );
 	}
 
@@ -237,7 +238,7 @@ class DSN_WooCommerce {
 			return;
 		}
 
-		$template = get_option( 'dsn_tpl_completed' );
+		$template = get_option( 'om_tpl_completed' );
 		$this->send_notification( $order, $template );
 	}
 
@@ -252,7 +253,7 @@ class DSN_WooCommerce {
 			return;
 		}
 
-		$template = get_option( 'dsn_tpl_refunded' );
+		$template = get_option( 'om_tpl_refunded' );
 		$this->send_notification( $order, $template );
 	}
 
@@ -263,7 +264,7 @@ class DSN_WooCommerce {
 	 * @param string   $template The SMS template.
 	 */
 	private function send_notification( $order, $template ) {
-		if ( ! get_option( 'dsn_wc_sms_enabled', 1 ) ) {
+		if ( ! get_option( 'om_wc_sms_enabled', 1 ) ) {
 			return;
 		}
 
@@ -277,19 +278,19 @@ class DSN_WooCommerce {
 		}
 
 		$message = $this->parse_template( $template, $order );
-		DSN_Twilio_API::send_sms( $phone, $message, $order->get_user_id(), $order->get_id() );
+		OM_Twilio_API::send_sms( $phone, $message, $order->get_user_id(), $order->get_id() );
 	}
 
 	/**
 	 * Parse template variables.
 	 *
-	 * @param string   $template The SMS template.
-	 * @param WC_Order $order    Order Object.
+	 * @param  string   $template The SMS template.
+	 * @param  WC_Order $order    Order Object.
 	 * @return string
 	 */
 	private function parse_template( $template, $order ) {
-		$tracking_num_key = get_option( 'dsn_track_number_key', '_tracking_number' );
-		$tracking_url_key = get_option( 'dsn_track_url_key', '_tracking_url' );
+		$tracking_num_key = get_option( 'om_track_number_key', '_tracking_number' );
+		$tracking_url_key = get_option( 'om_track_url_key', '_tracking_url' );
 
 		$track_num = $order->get_meta( $tracking_num_key, true );
 		$track_url = $order->get_meta( $tracking_url_key, true );
@@ -323,4 +324,4 @@ class DSN_WooCommerce {
 	}
 }
 
-new DSN_WooCommerce();
+new OM_WooCommerce();

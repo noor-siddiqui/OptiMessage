@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class OptiMessage {
 
+
 	/**
 	 * Single instance of the class.
 	 *
@@ -43,16 +44,16 @@ class OptiMessage {
 	 * Include required files
 	 */
 	private function includes() {
-		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-settings.php';
-		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-send-sms.php';
-		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-twilio-api.php';
-		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-history.php';
-		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-woocommerce.php';
-		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-user-profile.php';
-		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-webhook.php';
-		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-subscribers-list-table.php';
-		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-guest-customers-list-table.php';
-		include_once DSN_PLUGIN_DIR . 'includes/class-dsn-subscribers-tab.php';
+		include_once OM_PLUGIN_DIR . 'includes/class-om-settings.php';
+		include_once OM_PLUGIN_DIR . 'includes/class-om-send-sms.php';
+		include_once OM_PLUGIN_DIR . 'includes/class-om-twilio-api.php';
+		include_once OM_PLUGIN_DIR . 'includes/class-om-history.php';
+		include_once OM_PLUGIN_DIR . 'includes/class-om-woocommerce.php';
+		include_once OM_PLUGIN_DIR . 'includes/class-om-user-profile.php';
+		include_once OM_PLUGIN_DIR . 'includes/class-om-webhook.php';
+		include_once OM_PLUGIN_DIR . 'includes/class-om-subscribers-list-table.php';
+		include_once OM_PLUGIN_DIR . 'includes/class-om-guest-customers-list-table.php';
+		include_once OM_PLUGIN_DIR . 'includes/class-om-subscribers-tab.php';
 	}
 
 	/**
@@ -68,23 +69,23 @@ class OptiMessage {
 	 * Load text domain
 	 */
 	public function load_textdomain() {
-		load_plugin_textdomain( 'desishad-sms-notifier', false, dirname( plugin_basename( DSN_PLUGIN_DIR . 'optimessage.php' ) ) . '/languages' );
+		load_plugin_textdomain( 'optimessage', false, dirname( plugin_basename( OM_PLUGIN_DIR . 'optimessage.php' ) ) . '/languages' );
 	}
 
 	/**
 	 * Admin setup notice
 	 */
 	public function admin_setup_notice() {
-		if ( ! get_option( 'dsn_twilio_sid' ) || ! get_option( 'dsn_twilio_token' ) ) {
-			$settings_url = admin_url( 'admin.php?page=dsn-settings&tab=api' );
+		if ( ! get_option( 'om_twilio_sid' ) || ! get_option( 'om_twilio_token' ) ) {
+			$settings_url = admin_url( 'admin.php?page=om-settings&tab=api' );
 			?>
 			<div class="notice notice-warning is-dismissible">
 				<p>
-					<strong><?php esc_html_e( 'OptiMessage is almost ready!', 'desishad-sms-notifier' ); ?></strong>
+					<strong><?php esc_html_e( 'OptiMessage is almost ready!', 'optimessage' ); ?></strong>
 			<?php
 			printf(
 			/* translators: %s: Settings page URL */
-				wp_kses_post( __( 'Please <a href="%s">configure your Twilio API credentials</a> to start sending SMS notifications.', 'desishad-sms-notifier' ) ),
+				wp_kses_post( __( 'Please <a href="%s">configure your Twilio API credentials</a> to start sending SMS notifications.', 'optimessage' ) ),
 				esc_url( $settings_url )
 			);
 			?>
@@ -98,9 +99,9 @@ class OptiMessage {
 	 * Check if database update is required.
 	 */
 	public function check_db_update() {
-		if ( get_option( 'dsn_db_version' ) !== DSN_VERSION ) {
+		if ( get_option( 'om_db_version' ) !== OM_VERSION ) {
 			self::install();
-			update_option( 'dsn_db_version', DSN_VERSION );
+			update_option( 'om_db_version', OM_VERSION );
 		}
 	}
 
@@ -110,7 +111,7 @@ class OptiMessage {
 	public static function install() {
 		global $wpdb;
 
-		$table_name      = $wpdb->prefix . 'dsn_sms_history';
+		$table_name      = $wpdb->prefix . 'om_sms_history';
 		$charset_collate = $wpdb->get_charset_collate();
 
 		$sql = "CREATE TABLE $table_name (
