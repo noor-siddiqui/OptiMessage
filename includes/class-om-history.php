@@ -90,6 +90,17 @@ class OM_History {
 			$date_format     = get_option( 'date_format' );
 			$time_format     = get_option( 'time_format' );
 			$datetime_format = $date_format . ' ' . $time_format;
+
+			// Pre-load user cache to avoid N+1 queries during the loop.
+			$user_ids = array();
+			foreach ( $results as $row ) {
+				if ( ! empty( $row->user_id ) ) {
+					$user_ids[] = (int) $row->user_id;
+				}
+			}
+			if ( ! empty( $user_ids ) ) {
+				cache_users( array_unique( $user_ids ) );
+			}
 			?>
 			<?php foreach ( $results as $row ) : ?>
 						<tr>
