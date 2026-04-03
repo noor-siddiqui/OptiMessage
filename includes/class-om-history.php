@@ -87,6 +87,17 @@ class OM_History {
 			<tbody>
 		<?php if ( $results ) : ?>
 			<?php
+			// ⚡ Bolt: Pre-load user cache to prevent N+1 queries from get_edit_user_link() inside the loop.
+			$user_ids = array();
+			foreach ( $results as $row ) {
+				if ( ! empty( $row->user_id ) ) {
+					$user_ids[] = $row->user_id;
+				}
+			}
+			if ( ! empty( $user_ids ) ) {
+				cache_users( array_unique( $user_ids ) );
+			}
+
 			$date_format     = get_option( 'date_format' );
 			$time_format     = get_option( 'time_format' );
 			$datetime_format = $date_format . ' ' . $time_format;
