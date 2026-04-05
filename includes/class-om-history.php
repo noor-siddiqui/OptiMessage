@@ -87,6 +87,12 @@ class OM_History {
 			<tbody>
 		<?php if ( $results ) : ?>
 			<?php
+			// Pre-load user cache to avoid N+1 queries when calling get_edit_user_link().
+			$user_ids = array_filter( wp_list_pluck( $results, 'user_id' ) );
+			if ( ! empty( $user_ids ) ) {
+				cache_users( array_unique( $user_ids ) );
+			}
+
 			$date_format     = get_option( 'date_format' );
 			$time_format     = get_option( 'time_format' );
 			$datetime_format = $date_format . ' ' . $time_format;
