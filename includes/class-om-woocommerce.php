@@ -35,6 +35,9 @@ class OM_WooCommerce {
 		add_action( 'woocommerce_order_status_processing', array( $this, 'trigger_order_placed' ), 10, 2 );
 		add_action( 'woocommerce_order_status_completed', array( $this, 'trigger_order_completed' ), 10, 2 );
 		add_action( 'woocommerce_order_status_refunded', array( $this, 'trigger_order_refunded' ), 10, 2 );
+
+		// Async Twilio Lookup.
+		add_action( 'om_async_twilio_lookup_job', array( $this, 'process_async_twilio_lookup' ) );
 	}
 
 	/**
@@ -152,25 +155,50 @@ class OM_WooCommerce {
 
 		$phone = $order->get_billing_phone();
 		if ( ! empty( $phone ) ) {
-			$country = $order->get_billing_country();
-			$lookup  = OM_Twilio_API::lookup_phone( $phone, $country );
-			if ( is_array( $lookup ) ) {
-				if ( $lookup['valid'] ) {
-					$order->set_billing_phone( $lookup['formatted'] );
-					$order->update_meta_data( '_om_phone_valid', '1' );
-					$order->save();
+			// Decouple Twilio API lookup to prevent blocking checkout.
+			if ( function_exists( 'as_enqueue_async_action' ) ) {
+				as_enqueue_async_action( 'om_async_twilio_lookup_job', array( $order->get_id() ) );
+			} else {
+				wp_schedule_single_event( time(), 'om_async_twilio_lookup_job', array( $order->get_id() ) );
+			}
+		}
+	}
 
-					if ( $user_id ) {
-						update_user_meta( $user_id, 'billing_phone', $lookup['formatted'] );
-						update_user_meta( $user_id, '_om_phone_valid', '1' );
-					}
-				} else {
-					$order->update_meta_data( '_om_phone_valid', '-1' );
-					$order->save();
+	/**
+	 * Process async Twilio lookup for an order.
+	 *
+	 * @param int $order_id The order ID.
+	 */
+	public function process_async_twilio_lookup( $order_id ) {
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			return;
+		}
 
-					if ( $user_id ) {
-						update_user_meta( $user_id, '_om_phone_valid', '-1' );
-					}
+		$phone = $order->get_billing_phone();
+		if ( empty( $phone ) ) {
+			return;
+		}
+
+		$country = $order->get_billing_country();
+		$lookup  = OM_Twilio_API::lookup_phone( $phone, $country );
+		if ( is_array( $lookup ) ) {
+			$user_id = $order->get_customer_id();
+			if ( $lookup['valid'] ) {
+				$order->set_billing_phone( $lookup['formatted'] );
+				$order->update_meta_data( '_om_phone_valid', '1' );
+				$order->save();
+
+				if ( $user_id ) {
+					update_user_meta( $user_id, 'billing_phone', $lookup['formatted'] );
+					update_user_meta( $user_id, '_om_phone_valid', '1' );
+				}
+			} else {
+				$order->update_meta_data( '_om_phone_valid', '-1' );
+				$order->save();
+
+				if ( $user_id ) {
+					update_user_meta( $user_id, '_om_phone_valid', '-1' );
 				}
 			}
 		}
