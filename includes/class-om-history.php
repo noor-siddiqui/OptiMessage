@@ -41,6 +41,19 @@ class OM_History {
 
      // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names cannot be prepared.
 		$results = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table_name} ORDER BY sent_at DESC LIMIT %d OFFSET %d", $per_page, $offset ) );
+
+		if ( $results ) {
+			// Pre-load user cache to avoid N+1 queries during the loop when calling get_edit_user_link.
+			$user_ids = array();
+			foreach ( $results as $row ) {
+				if ( ! empty( $row->user_id ) ) {
+					$user_ids[] = (int) $row->user_id;
+				}
+			}
+			if ( ! empty( $user_ids ) ) {
+				cache_users( array_unique( $user_ids ) );
+			}
+		}
 		?>
 		<h2><?php esc_html_e( 'SMS Sending History', 'optimessage' ); ?></h2>
 		
