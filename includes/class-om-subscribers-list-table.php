@@ -155,7 +155,7 @@ class OM_Subscribers_List_Table extends WP_List_Table {
 
 		// Handle Sorting.
 		$orderby = isset( $_GET['orderby'] ) ? sanitize_text_field( wp_unslash( $_GET['orderby'] ) ) : 'ID';
-		$order = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'DESC';
+		$order   = isset( $_GET['order'] ) ? sanitize_text_field( wp_unslash( $_GET['order'] ) ) : 'DESC';
 
 		$args['order'] = $order;
 
@@ -216,20 +216,6 @@ class OM_Subscribers_List_Table extends WP_List_Table {
 					return '<span style="color:green;font-weight:bold;">' . __( 'Yes', 'optimessage' ) . '</span>';
 				} elseif ( '-1' === $status ) {
 					return '<span style="color:red;font-weight:bold;">' . __( 'No', 'optimessage' ) . '</span>';
-				}
-
-				// If not validated yet, do it on the fly.
-				$country = get_user_meta( $item->ID, 'billing_country', true );
-				$lookup  = OM_Twilio_API::lookup_phone( $phone, $country );
-				if ( is_array( $lookup ) ) {
-					if ( $lookup['valid'] ) {
-						update_user_meta( $item->ID, 'billing_phone', $lookup['formatted'] );
-						update_user_meta( $item->ID, '_om_phone_valid', '1' );
-						return '<span style="color:green;font-weight:bold;">' . __( 'Yes', 'optimessage' ) . '</span>';
-					} else {
-						update_user_meta( $item->ID, '_om_phone_valid', '-1' );
-						return '<span style="color:red;font-weight:bold;">' . __( 'No', 'optimessage' ) . '</span>';
-					}
 				}
 
 				return '<span style="color:orange;">' . __( 'Pending', 'optimessage' ) . '</span>';

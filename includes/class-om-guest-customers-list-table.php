@@ -191,21 +191,6 @@ class OM_Guest_Customers_List_Table extends WP_List_Table {
 					return '<span style="color:red;font-weight:bold;">' . __( 'No', 'optimessage' ) . '</span>';
 				}
 
-				$country = $item->get_billing_country();
-				$lookup  = OM_Twilio_API::lookup_phone( $phone, $country );
-				if ( is_array( $lookup ) ) {
-					if ( $lookup['valid'] ) {
-						$item->update_meta_data( '_om_phone_valid', '1' );
-						$item->set_billing_phone( $lookup['formatted'] );
-						$item->save();
-						return '<span style="color:green;font-weight:bold;">' . __( 'Yes', 'optimessage' ) . '</span>';
-					} else {
-						$item->update_meta_data( '_om_phone_valid', '-1' );
-						$item->save();
-						return '<span style="color:red;font-weight:bold;">' . __( 'No', 'optimessage' ) . '</span>';
-					}
-				}
-
 				return '<span style="color:orange;">' . __( 'Pending', 'optimessage' ) . '</span>';
 
 			case 'address':
