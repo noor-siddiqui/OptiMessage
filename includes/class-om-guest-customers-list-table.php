@@ -191,22 +191,16 @@ class OM_Guest_Customers_List_Table extends WP_List_Table {
 					return '<span style="color:red;font-weight:bold;">' . __( 'No', 'optimessage' ) . '</span>';
 				}
 
-				$country = $item->get_billing_country();
-				$lookup  = OM_Twilio_API::lookup_phone( $phone, $country );
-				if ( is_array( $lookup ) ) {
-					if ( $lookup['valid'] ) {
-						$item->update_meta_data( '_om_phone_valid', '1' );
-						$item->set_billing_phone( $lookup['formatted'] );
-						$item->save();
-						return '<span style="color:green;font-weight:bold;">' . __( 'Yes', 'optimessage' ) . '</span>';
-					} else {
-						$item->update_meta_data( '_om_phone_valid', '-1' );
-						$item->save();
-						return '<span style="color:red;font-weight:bold;">' . __( 'No', 'optimessage' ) . '</span>';
+				// Decouple Twilio API lookup to prevent blocking list rendering.
+				if ( function_exists( 'as_has_scheduled_action' ) && function_exists( 'as_enqueue_async_action' ) ) {
+					if ( ! as_has_scheduled_action( 'om_async_twilio_lookup_job', array( $item->get_id() ) ) ) {
+						as_enqueue_async_action( 'om_async_twilio_lookup_job', array( $item->get_id() ) );
 					}
+				} elseif ( ! wp_next_scheduled( 'om_async_twilio_lookup_job', array( $item->get_id() ) ) ) {
+					wp_schedule_single_event( time(), 'om_async_twilio_lookup_job', array( $item->get_id() ) );
 				}
 
-				return '<span style="color:orange;">' . __( 'Pending', 'optimessage' ) . '</span>';
+				return '<span style="color:orange;">' . __( 'Pending Validation', 'optimessage' ) . '</span>';
 
 			case 'address':
 				return esc_html( $item->get_billing_address_1() );
