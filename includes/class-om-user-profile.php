@@ -28,10 +28,38 @@ class OM_User_Profile {
 
 		// Validate phone immediately when profile saves.
 		add_action( 'profile_update', array( $this, 'validate_phone_on_profile_save' ), 10, 2 );
+
+		// Process async user Twilio lookup.
+		add_action( 'om_async_twilio_lookup_user_job', array( $this, 'process_async_twilio_lookup_user' ) );
 	}
 
 	/**
-	 * Validate and update phone on profile save.
+	 * Process async Twilio lookup for a user.
+	 *
+	 * @param int $user_id User ID.
+	 */
+	public function process_async_twilio_lookup_user( $user_id ) {
+		$phone = get_user_meta( $user_id, 'billing_phone', true );
+		if ( empty( $phone ) ) {
+			delete_user_meta( $user_id, '_om_phone_valid' );
+			return;
+		}
+
+		$country = get_user_meta( $user_id, 'billing_country', true );
+		$lookup  = OM_Twilio_API::lookup_phone( $phone, $country );
+
+		if ( is_array( $lookup ) ) {
+			if ( $lookup['valid'] ) {
+				update_user_meta( $user_id, 'billing_phone', $lookup['formatted'] );
+				update_user_meta( $user_id, '_om_phone_valid', '1' );
+			} else {
+				update_user_meta( $user_id, '_om_phone_valid', '-1' );
+			}
+		}
+	}
+
+	/**
+	 * Enqueue validation and update phone on profile save.
 	 *
 	 * @param int   $user_id       User ID.
 	 * @param array $old_user_data Old user data.
@@ -51,14 +79,13 @@ class OM_User_Profile {
 			$old_phone     = get_user_meta( $user_id, 'billing_phone', true );
 
 			if ( $phone !== $old_phone || empty( $current_valid ) ) {
-				$lookup = OM_Twilio_API::lookup_phone( $phone );
-				if ( is_array( $lookup ) ) {
-					if ( $lookup['valid'] ) {
-						update_user_meta( $user_id, 'billing_phone', $lookup['formatted'] );
-						update_user_meta( $user_id, '_om_phone_valid', '1' );
-					} else {
-						update_user_meta( $user_id, '_om_phone_valid', '-1' );
+				update_user_meta( $user_id, '_om_phone_valid', '' ); // Reset valid status.
+				if ( function_exists( 'as_has_scheduled_action' ) && function_exists( 'as_enqueue_async_action' ) ) {
+					if ( ! as_has_scheduled_action( 'om_async_twilio_lookup_user_job', array( $user_id ) ) ) {
+						as_enqueue_async_action( 'om_async_twilio_lookup_user_job', array( $user_id ) );
 					}
+				} elseif ( ! wp_next_scheduled( 'om_async_twilio_lookup_user_job', array( $user_id ) ) ) {
+					wp_schedule_single_event( time(), 'om_async_twilio_lookup_user_job', array( $user_id ) );
 				}
 			}
 		}
