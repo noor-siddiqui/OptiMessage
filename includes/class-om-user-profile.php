@@ -28,6 +28,32 @@ class OM_User_Profile {
 
 		// Validate phone immediately when profile saves.
 		add_action( 'profile_update', array( $this, 'validate_phone_on_profile_save' ), 10, 2 );
+
+		// Async Twilio Lookup.
+		add_action( 'om_async_twilio_user_lookup_job', array( $this, 'process_async_twilio_user_lookup' ) );
+	}
+
+	/**
+	 * Process async Twilio lookup for a user.
+	 *
+	 * @param int $user_id The user ID.
+	 */
+	public function process_async_twilio_user_lookup( $user_id ) {
+		$phone = get_user_meta( $user_id, 'billing_phone', true );
+		if ( empty( $phone ) ) {
+			return;
+		}
+
+		$country = get_user_meta( $user_id, 'billing_country', true );
+		$lookup  = OM_Twilio_API::lookup_phone( $phone, $country );
+		if ( is_array( $lookup ) ) {
+			if ( $lookup['valid'] ) {
+				update_user_meta( $user_id, 'billing_phone', $lookup['formatted'] );
+				update_user_meta( $user_id, '_om_phone_valid', '1' );
+			} else {
+				update_user_meta( $user_id, '_om_phone_valid', '-1' );
+			}
+		}
 	}
 
 	/**
@@ -51,14 +77,13 @@ class OM_User_Profile {
 			$old_phone     = get_user_meta( $user_id, 'billing_phone', true );
 
 			if ( $phone !== $old_phone || empty( $current_valid ) ) {
-				$lookup = OM_Twilio_API::lookup_phone( $phone );
-				if ( is_array( $lookup ) ) {
-					if ( $lookup['valid'] ) {
-						update_user_meta( $user_id, 'billing_phone', $lookup['formatted'] );
-						update_user_meta( $user_id, '_om_phone_valid', '1' );
-					} else {
-						update_user_meta( $user_id, '_om_phone_valid', '-1' );
+				if ( function_exists( 'as_enqueue_async_action' ) ) {
+					// Check if already scheduled to prevent duplicates.
+					if ( ! as_has_scheduled_action( 'om_async_twilio_user_lookup_job', array( $user_id ) ) ) {
+						as_enqueue_async_action( 'om_async_twilio_user_lookup_job', array( $user_id ) );
 					}
+				} elseif ( ! wp_next_scheduled( 'om_async_twilio_user_lookup_job', array( $user_id ) ) ) {
+						wp_schedule_single_event( time(), 'om_async_twilio_user_lookup_job', array( $user_id ) );
 				}
 			}
 		}
