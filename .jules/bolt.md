@@ -9,3 +9,7 @@
 ## 2024-05-18 - Synchronous API calls in checkout
 **Learning:** The OptiMessage plugin executed a synchronous API call to Twilio (`OM_Twilio_API::lookup_phone`) during the critical path of the WooCommerce checkout process. This caused checkout requests to block until Twilio responded, adding significant network latency directly to the user's wait time.
 **Action:** Offload all non-critical external API requests to background jobs. Use WooCommerce Action Scheduler (`as_enqueue_async_action`) where available for robust job queueing, with a fallback to `wp_schedule_single_event` (WP Cron) when it is not.
+
+## 2024-05-18 - Synchronous API calls in List Tables
+**Learning:** Executing external API requests (like Twilio lookups) synchronously within WordPress `WP_List_Table` render loops causes severe N+1 bottlenecks, blocking the entire page load until all network requests resolve.
+**Action:** Defer expensive API calls in list tables to background jobs (using `as_enqueue_async_action` or `wp_schedule_single_event`), rendering a 'Pending' state immediately. Ensure duplicate jobs aren't scheduled by checking `as_has_scheduled_action` or `wp_next_scheduled` first.
