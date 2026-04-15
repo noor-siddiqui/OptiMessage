@@ -34,6 +34,8 @@ class OM_WooCommerce {
 		// Order Statuses for SMS.
 		add_action( 'woocommerce_order_status_processing', array( $this, 'trigger_order_placed' ), 10, 2 );
 		add_action( 'woocommerce_order_status_completed', array( $this, 'trigger_order_completed' ), 10, 2 );
+		add_action( 'woocommerce_order_status_on-hold', array( $this, 'trigger_order_on_hold' ), 10, 2 );
+		add_action( 'woocommerce_order_status_cancelled', array( $this, 'trigger_order_cancelled' ), 10, 2 );
 		add_action( 'woocommerce_order_status_refunded', array( $this, 'trigger_order_refunded' ), 10, 2 );
 
 		// Async Twilio Lookup.
@@ -252,7 +254,7 @@ class OM_WooCommerce {
 		}
 
 		$template = get_option( 'om_tpl_placed' );
-		$this->send_notification( $order, $template );
+		$this->send_notification( $order, $template, 'placed' );
 	}
 
 	/**
@@ -267,7 +269,37 @@ class OM_WooCommerce {
 		}
 
 		$template = get_option( 'om_tpl_completed' );
-		$this->send_notification( $order, $template );
+		$this->send_notification( $order, $template, 'completed' );
+	}
+
+	/**
+	 * Trigger SMS on order on hold.
+	 *
+	 * @param int      $order_id Order ID.
+	 * @param WC_Order $order    Order Object.
+	 */
+	public function trigger_order_on_hold( $order_id, $order ) {
+		if ( ! $this->has_consent( $order ) ) {
+			return;
+		}
+
+		$template = get_option( 'om_tpl_on_hold' );
+		$this->send_notification( $order, $template, 'on_hold' );
+	}
+
+	/**
+	 * Trigger SMS on order cancelled.
+	 *
+	 * @param int      $order_id Order ID.
+	 * @param WC_Order $order    Order Object.
+	 */
+	public function trigger_order_cancelled( $order_id, $order ) {
+		if ( ! $this->has_consent( $order ) ) {
+			return;
+		}
+
+		$template = get_option( 'om_tpl_cancelled' );
+		$this->send_notification( $order, $template, 'cancelled' );
 	}
 
 	/**
@@ -282,7 +314,7 @@ class OM_WooCommerce {
 		}
 
 		$template = get_option( 'om_tpl_refunded' );
-		$this->send_notification( $order, $template );
+		$this->send_notification( $order, $template, 'refunded' );
 	}
 
 	/**
@@ -290,9 +322,15 @@ class OM_WooCommerce {
 	 *
 	 * @param WC_Order $order    Order Object.
 	 * @param string   $template The SMS template.
+	 * @param string   $event    The event key (placed, completed, refunded).
 	 */
-	private function send_notification( $order, $template ) {
+	private function send_notification( $order, $template, $event = '' ) {
 		if ( ! get_option( 'om_wc_sms_enabled', 1 ) ) {
+			return;
+		}
+
+		// Check per-event toggle if an event key is provided.
+		if ( ! empty( $event ) && ! get_option( 'om_wc_event_' . $event, 1 ) ) {
 			return;
 		}
 
@@ -343,6 +381,10 @@ class OM_WooCommerce {
 			'{first_name}'        => $order->get_billing_first_name(),
 			'{last_name}'         => $order->get_billing_last_name(),
 			'{total}'             => html_entity_decode( wp_strip_all_tags( wc_price( $order->get_total(), array( 'currency' => $order->get_currency() ) ) ) ),
+			'{order_status}'      => wc_get_order_status_name( $order->get_status() ),
+			'{order_date}'        => $order->get_date_created() ? $order->get_date_created()->date_i18n( get_option( 'date_format' ) ) : '',
+			'{payment_method}'    => $order->get_payment_method_title(),
+			'{site_name}'         => get_bloginfo( 'name' ),
 			'{tracking_number}'   => $track_num,
 			'{tracking_url}'      => $track_url,
 			'{shipping_provider}' => $provider,

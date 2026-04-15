@@ -60,6 +60,46 @@ class OM_Settings {
 		);
 		register_setting(
 			'om_general_group',
+			'om_wc_event_placed',
+			array(
+				'type'    => 'boolean',
+				'default' => 1,
+			)
+		);
+		register_setting(
+			'om_general_group',
+			'om_wc_event_completed',
+			array(
+				'type'    => 'boolean',
+				'default' => 1,
+			)
+		);
+		register_setting(
+			'om_general_group',
+			'om_wc_event_on_hold',
+			array(
+				'type'    => 'boolean',
+				'default' => 0,
+			)
+		);
+		register_setting(
+			'om_general_group',
+			'om_wc_event_cancelled',
+			array(
+				'type'    => 'boolean',
+				'default' => 0,
+			)
+		);
+		register_setting(
+			'om_general_group',
+			'om_wc_event_refunded',
+			array(
+				'type'    => 'boolean',
+				'default' => 1,
+			)
+		);
+		register_setting(
+			'om_general_group',
 			'om_send_no_consent',
 			array(
 				'type'    => 'boolean',
@@ -110,6 +150,8 @@ class OM_Settings {
 		// Template Settings.
 		register_setting( 'om_templates_group', 'om_tpl_placed', array( 'sanitize_callback' => 'wp_kses_post' ) );
 		register_setting( 'om_templates_group', 'om_tpl_completed', array( 'sanitize_callback' => 'wp_kses_post' ) );
+		register_setting( 'om_templates_group', 'om_tpl_on_hold', array( 'sanitize_callback' => 'wp_kses_post' ) );
+		register_setting( 'om_templates_group', 'om_tpl_cancelled', array( 'sanitize_callback' => 'wp_kses_post' ) );
 		register_setting( 'om_templates_group', 'om_tpl_refunded', array( 'sanitize_callback' => 'wp_kses_post' ) );
 	}
 
@@ -201,8 +243,36 @@ class OM_Settings {
 			<tr valign="top">
 				<th scope="row"><?php esc_html_e( 'Enable WooCommerce SMS', 'optimessage' ); ?></th>
 				<td>
-					<input type="checkbox" name="om_wc_sms_enabled" value="1" <?php checked( 1, get_option( 'om_wc_sms_enabled', 1 ), true ); ?> />
+					<input type="checkbox" name="om_wc_sms_enabled" id="om_wc_sms_enabled" value="1" <?php checked( 1, get_option( 'om_wc_sms_enabled', 1 ), true ); ?> />
 					<label for="om_wc_sms_enabled"><?php esc_html_e( 'Enable SMS notifications for WooCommerce orders.', 'optimessage' ); ?></label>
+				</td>
+			</tr>
+			<tr valign="top" class="om-wc-event-row">
+				<th scope="row"><?php esc_html_e( 'WooCommerce SMS Events', 'optimessage' ); ?></th>
+				<td>
+					<fieldset>
+						<label>
+							<input type="checkbox" name="om_wc_event_placed" value="1" <?php checked( 1, get_option( 'om_wc_event_placed', 1 ), true ); ?> />
+							<?php esc_html_e( 'Order Placed (Processing)', 'optimessage' ); ?>
+						</label><br>
+						<label>
+							<input type="checkbox" name="om_wc_event_completed" value="1" <?php checked( 1, get_option( 'om_wc_event_completed', 1 ), true ); ?> />
+							<?php esc_html_e( 'Order Completed (Shipped)', 'optimessage' ); ?>
+						</label><br>
+						<label>
+							<input type="checkbox" name="om_wc_event_on_hold" value="1" <?php checked( 1, get_option( 'om_wc_event_on_hold', 0 ), true ); ?> />
+							<?php esc_html_e( 'Order On Hold (Awaiting Payment)', 'optimessage' ); ?>
+						</label><br>
+						<label>
+							<input type="checkbox" name="om_wc_event_cancelled" value="1" <?php checked( 1, get_option( 'om_wc_event_cancelled', 0 ), true ); ?> />
+							<?php esc_html_e( 'Order Cancelled', 'optimessage' ); ?>
+						</label><br>
+						<label>
+							<input type="checkbox" name="om_wc_event_refunded" value="1" <?php checked( 1, get_option( 'om_wc_event_refunded', 1 ), true ); ?> />
+							<?php esc_html_e( 'Order Refunded', 'optimessage' ); ?>
+						</label>
+					</fieldset>
+					<p class="description"><?php esc_html_e( 'Select which WooCommerce order events should trigger an SMS notification to the customer.', 'optimessage' ); ?></p>
 				</td>
 			</tr>
 			<tr valign="top">
@@ -248,6 +318,23 @@ class OM_Settings {
 				</td>
 			</tr>
 		</table>
+		<script type="text/javascript">
+			jQuery(document).ready(function($) {
+				var $toggle = $('#om_wc_sms_enabled');
+				var $eventRows = $('.om-wc-event-row');
+
+				function toggleEventRows() {
+					if ($toggle.is(':checked')) {
+						$eventRows.show();
+					} else {
+						$eventRows.hide();
+					}
+				}
+
+				toggleEventRows();
+				$toggle.on('change', toggleEventRows);
+			});
+		</script>
 		<?php
 	}
 
@@ -255,27 +342,90 @@ class OM_Settings {
 	 * Render the Templates settings tab.
 	 */
 	private function render_templates_tab() {
+		$events = array(
+			'placed'    => get_option( 'om_wc_event_placed', 1 ),
+			'completed' => get_option( 'om_wc_event_completed', 1 ),
+			'on_hold'   => get_option( 'om_wc_event_on_hold', 0 ),
+			'cancelled' => get_option( 'om_wc_event_cancelled', 0 ),
+			'refunded'  => get_option( 'om_wc_event_refunded', 1 ),
+		);
+		$wc_enabled = get_option( 'om_wc_sms_enabled', 1 );
 		?>
+		<div class="notice notice-info inline" style="margin: 15px 0;">
+			<p><?php esc_html_e( 'These templates are used for automatic WooCommerce order SMS. Only templates for events enabled in General Settings will be sent.', 'optimessage' ); ?></p>
+		</div>
 		<p class="description">
-		<?php esc_html_e( 'Available tags: {order_id}, {first_name}, {last_name}, {total}, {tracking_number}, {tracking_url}, {shipping_provider}', 'optimessage' ); ?>
+		<?php esc_html_e( 'Available tags: {order_id}, {first_name}, {last_name}, {total}, {order_status}, {order_date}, {payment_method}, {site_name}, {tracking_number}, {tracking_url}, {shipping_provider}', 'optimessage' ); ?>
 		</p>
 		<table class="form-table">
 			<tr valign="top">
-				<th scope="row"><?php esc_html_e( 'Order Placed Template', 'optimessage' ); ?></th>
+				<th scope="row">
+					<?php esc_html_e( 'Order Placed Template', 'optimessage' ); ?>
+					<?php if ( $wc_enabled && $events['placed'] ) : ?>
+						<span style="color: #00a32a;" title="<?php esc_attr_e( 'Active', 'optimessage' ); ?>">&#9679;</span>
+					<?php else : ?>
+						<span style="color: #999;" title="<?php esc_attr_e( 'Inactive — enable in General Settings', 'optimessage' ); ?>">&#9679;</span>
+					<?php endif; ?>
+				</th>
 				<td>
-					<textarea name="om_tpl_placed" rows="5" class="large-text"><?php echo esc_textarea( get_option( 'om_tpl_placed', 'Hi {first_name}, thanks for your order #{order_id}! We will let you know when it ships.' ) ); ?></textarea>
+					<textarea name="om_tpl_placed" rows="5" class="large-text"><?php echo esc_textarea( get_option( 'om_tpl_placed', 'Hi {first_name}, thank you for your order #{order_id} ({total}) at {site_name}! We will notify you when it ships.' ) ); ?></textarea>
+					<p class="description"><?php esc_html_e( 'Sent when a new order is placed and payment is received (Processing status).', 'optimessage' ); ?></p>
 				</td>
 			</tr>
 			<tr valign="top">
-				<th scope="row"><?php esc_html_e( 'Order Completed (Shipment) Template', 'optimessage' ); ?></th>
+				<th scope="row">
+					<?php esc_html_e( 'Order Completed (Shipment) Template', 'optimessage' ); ?>
+					<?php if ( $wc_enabled && $events['completed'] ) : ?>
+						<span style="color: #00a32a;" title="<?php esc_attr_e( 'Active', 'optimessage' ); ?>">&#9679;</span>
+					<?php else : ?>
+						<span style="color: #999;" title="<?php esc_attr_e( 'Inactive — enable in General Settings', 'optimessage' ); ?>">&#9679;</span>
+					<?php endif; ?>
+				</th>
 				<td>
-					<textarea name="om_tpl_completed" rows="5" class="large-text"><?php echo esc_textarea( get_option( 'om_tpl_completed', 'Good news {first_name}! Your order #{order_id} has been shipped. Track here: {tracking_url}' ) ); ?></textarea>
+					<textarea name="om_tpl_completed" rows="5" class="large-text"><?php echo esc_textarea( get_option( 'om_tpl_completed', 'Good news {first_name}! Your order #{order_id} from {site_name} has been shipped via {shipping_provider}. Track here: {tracking_url}' ) ); ?></textarea>
+					<p class="description"><?php esc_html_e( 'Sent when an order is marked as completed / shipped.', 'optimessage' ); ?></p>
 				</td>
 			</tr>
 			<tr valign="top">
-				<th scope="row"><?php esc_html_e( 'Order Refunded Template', 'optimessage' ); ?></th>
+				<th scope="row">
+					<?php esc_html_e( 'Order On Hold Template', 'optimessage' ); ?>
+					<?php if ( $wc_enabled && $events['on_hold'] ) : ?>
+						<span style="color: #00a32a;" title="<?php esc_attr_e( 'Active', 'optimessage' ); ?>">&#9679;</span>
+					<?php else : ?>
+						<span style="color: #999;" title="<?php esc_attr_e( 'Inactive — enable in General Settings', 'optimessage' ); ?>">&#9679;</span>
+					<?php endif; ?>
+				</th>
 				<td>
-					<textarea name="om_tpl_refunded" rows="5" class="large-text"><?php echo esc_textarea( get_option( 'om_tpl_refunded', 'Hi {first_name}, your order #{order_id} has been refunded.' ) ); ?></textarea>
+					<textarea name="om_tpl_on_hold" rows="5" class="large-text"><?php echo esc_textarea( get_option( 'om_tpl_on_hold', 'Hi {first_name}, your order #{order_id} at {site_name} is on hold awaiting {payment_method} payment. Please complete your payment to proceed.' ) ); ?></textarea>
+					<p class="description"><?php esc_html_e( 'Sent when an order is placed on hold (e.g. awaiting bank transfer or manual payment).', 'optimessage' ); ?></p>
+				</td>
+			</tr>
+			<tr valign="top">
+				<th scope="row">
+					<?php esc_html_e( 'Order Cancelled Template', 'optimessage' ); ?>
+					<?php if ( $wc_enabled && $events['cancelled'] ) : ?>
+						<span style="color: #00a32a;" title="<?php esc_attr_e( 'Active', 'optimessage' ); ?>">&#9679;</span>
+					<?php else : ?>
+						<span style="color: #999;" title="<?php esc_attr_e( 'Inactive — enable in General Settings', 'optimessage' ); ?>">&#9679;</span>
+					<?php endif; ?>
+				</th>
+				<td>
+					<textarea name="om_tpl_cancelled" rows="5" class="large-text"><?php echo esc_textarea( get_option( 'om_tpl_cancelled', 'Hi {first_name}, your order #{order_id} ({total}) at {site_name} has been cancelled. If this was a mistake, please contact us.' ) ); ?></textarea>
+					<p class="description"><?php esc_html_e( 'Sent when an order is cancelled by the admin or customer.', 'optimessage' ); ?></p>
+				</td>
+			</tr>
+			<tr valign="top">
+				<th scope="row">
+					<?php esc_html_e( 'Order Refunded Template', 'optimessage' ); ?>
+					<?php if ( $wc_enabled && $events['refunded'] ) : ?>
+						<span style="color: #00a32a;" title="<?php esc_attr_e( 'Active', 'optimessage' ); ?>">&#9679;</span>
+					<?php else : ?>
+						<span style="color: #999;" title="<?php esc_attr_e( 'Inactive — enable in General Settings', 'optimessage' ); ?>">&#9679;</span>
+					<?php endif; ?>
+				</th>
+				<td>
+					<textarea name="om_tpl_refunded" rows="5" class="large-text"><?php echo esc_textarea( get_option( 'om_tpl_refunded', 'Hi {first_name}, your order #{order_id} ({total}) from {site_name} has been refunded. The amount will be returned via {payment_method}.' ) ); ?></textarea>
+					<p class="description"><?php esc_html_e( 'Sent when an order is fully refunded.', 'optimessage' ); ?></p>
 				</td>
 			</tr>
 		</table>
@@ -295,7 +445,7 @@ class OM_Settings {
 		<script type="text/javascript">
 			jQuery(document).ready(function($) {
 				// Target all textareas used for SMS messages
-				var $textareas = $('textarea[name="message"], textarea[name="om_tpl_placed"], textarea[name="om_tpl_completed"], textarea[name="om_tpl_refunded"]');
+				var $textareas = $('textarea[name="message"], textarea[name="om_tpl_placed"], textarea[name="om_tpl_completed"], textarea[name="om_tpl_on_hold"], textarea[name="om_tpl_cancelled"], textarea[name="om_tpl_refunded"]');
 
 				if ($textareas.length === 0) {
 					return;
