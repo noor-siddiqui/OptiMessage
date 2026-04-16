@@ -48,22 +48,22 @@ class OM_History {
 		$values = array();
 
 		if ( ! empty( $filter_phone ) ) {
-			$where  .= ' AND phone_number LIKE %s';
+			$where   .= ' AND phone_number LIKE %s';
 			$values[] = '%' . $wpdb->esc_like( $filter_phone ) . '%';
 		}
 
 		if ( ! empty( $filter_status ) ) {
-			$where  .= ' AND status = %s';
+			$where   .= ' AND status = %s';
 			$values[] = $filter_status;
 		}
 
 		if ( ! empty( $filter_from ) ) {
-			$where  .= ' AND sent_at >= %s';
+			$where   .= ' AND sent_at >= %s';
 			$values[] = $filter_from . ' 00:00:00';
 		}
 
 		if ( ! empty( $filter_to ) ) {
-			$where  .= ' AND sent_at <= %s';
+			$where   .= ' AND sent_at <= %s';
 			$values[] = $filter_to . ' 23:59:59';
 		}
 
@@ -82,6 +82,19 @@ class OM_History {
 		$values[]   = $offset;
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is built with placeholders above.
 		$results = $wpdb->get_results( $wpdb->prepare( $data_query, $values ) );
+
+		// Pre-load user object cache to prevent N+1 queries during rendering.
+		if ( $results ) {
+			$user_ids = array();
+			foreach ( $results as $row ) {
+				if ( ! empty( $row->user_id ) ) {
+					$user_ids[] = (int) $row->user_id;
+				}
+			}
+			if ( ! empty( $user_ids ) ) {
+				cache_users( array_unique( $user_ids ) );
+			}
+		}
 
 		// Build base URL for pagination links (preserve filters).
 		$filter_args = array(
