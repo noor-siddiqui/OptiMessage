@@ -48,22 +48,22 @@ class OM_History {
 		$values = array();
 
 		if ( ! empty( $filter_phone ) ) {
-			$where  .= ' AND phone_number LIKE %s';
+			$where   .= ' AND phone_number LIKE %s';
 			$values[] = '%' . $wpdb->esc_like( $filter_phone ) . '%';
 		}
 
 		if ( ! empty( $filter_status ) ) {
-			$where  .= ' AND status = %s';
+			$where   .= ' AND status = %s';
 			$values[] = $filter_status;
 		}
 
 		if ( ! empty( $filter_from ) ) {
-			$where  .= ' AND sent_at >= %s';
+			$where   .= ' AND sent_at >= %s';
 			$values[] = $filter_from . ' 00:00:00';
 		}
 
 		if ( ! empty( $filter_to ) ) {
-			$where  .= ' AND sent_at <= %s';
+			$where   .= ' AND sent_at <= %s';
 			$values[] = $filter_to . ' 23:59:59';
 		}
 
@@ -175,6 +175,12 @@ class OM_History {
 				$date_format     = get_option( 'date_format' );
 				$time_format     = get_option( 'time_format' );
 				$datetime_format = $date_format . ' ' . $time_format;
+
+				// ⚡ Bolt: Prevent N+1 query bottleneck by priming the user cache.
+				$user_ids = array_filter( wp_list_pluck( $results, 'user_id' ) );
+				if ( ! empty( $user_ids ) ) {
+					cache_users( array_unique( $user_ids ) );
+				}
 				?>
 				<?php foreach ( $results as $row ) : ?>
 					<tr>
