@@ -83,6 +83,14 @@ class OM_History {
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is built with placeholders above.
 		$results = $wpdb->get_results( $wpdb->prepare( $data_query, $values ) );
 
+		// Prime user cache to prevent N+1 queries when calling get_edit_user_link() in the loop.
+		if ( ! empty( $results ) ) {
+			$user_ids = array_filter( wp_list_pluck( $results, 'user_id' ) );
+			if ( ! empty( $user_ids ) ) {
+				cache_users( array_unique( $user_ids ) );
+			}
+		}
+
 		// Build base URL for pagination links (preserve filters).
 		$filter_args = array(
 			'page'      => 'om-settings',
