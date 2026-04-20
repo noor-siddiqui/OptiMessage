@@ -157,6 +157,7 @@ class OM_Subscribers_Tab {
 				)
 			);
 
+			$lookup_requests = array();
 			foreach ( $orders as $order ) {
 				$phone   = $order->get_billing_phone();
 				$country = $order->get_billing_country();
@@ -168,16 +169,32 @@ class OM_Subscribers_Tab {
 					continue;
 				}
 
-				$lookup = OM_Twilio_API::lookup_phone( $phone, $country );
-				if ( is_array( $lookup ) && ! empty( $lookup['valid'] ) ) {
-					$order->update_meta_data( '_om_phone_valid', '1' );
-					$order->set_billing_phone( $lookup['formatted'] );
-					$order->save();
-					++$validated;
-				} else {
-					$order->update_meta_data( '_om_phone_valid', '-1' );
-					$order->save();
-					++$failed;
+				$lookup_requests[ $order->get_id() ] = array(
+					'phone'   => $phone,
+					'country' => $country,
+				);
+			}
+
+			if ( ! empty( $lookup_requests ) ) {
+				$results = OM_Twilio_API::lookup_phone_batch( $lookup_requests );
+
+				foreach ( $orders as $order ) {
+					$order_id = $order->get_id();
+					if ( ! isset( $results[ $order_id ] ) ) {
+						continue;
+					}
+
+					$lookup = $results[ $order_id ];
+					if ( is_array( $lookup ) && ! empty( $lookup['valid'] ) ) {
+						$order->update_meta_data( '_om_phone_valid', '1' );
+						$order->set_billing_phone( $lookup['formatted'] );
+						$order->save();
+						++$validated;
+					} else {
+						$order->update_meta_data( '_om_phone_valid', '-1' );
+						$order->save();
+						++$failed;
+					}
 				}
 			}
 
@@ -218,18 +235,34 @@ class OM_Subscribers_Tab {
 
 			$users = $user_query->get_results();
 
+			$lookup_requests = array();
 			foreach ( $users as $user ) {
 				$phone   = get_user_meta( $user->ID, 'billing_phone', true );
 				$country = get_user_meta( $user->ID, 'billing_country', true );
 
-				$lookup = OM_Twilio_API::lookup_phone( $phone, $country );
-				if ( is_array( $lookup ) && ! empty( $lookup['valid'] ) ) {
-					update_user_meta( $user->ID, 'billing_phone', $lookup['formatted'] );
-					update_user_meta( $user->ID, '_om_phone_valid', '1' );
-					++$validated;
-				} else {
-					update_user_meta( $user->ID, '_om_phone_valid', '-1' );
-					++$failed;
+				$lookup_requests[ $user->ID ] = array(
+					'phone'   => $phone,
+					'country' => $country,
+				);
+			}
+
+			if ( ! empty( $lookup_requests ) ) {
+				$results = OM_Twilio_API::lookup_phone_batch( $lookup_requests );
+
+				foreach ( $users as $user ) {
+					if ( ! isset( $results[ $user->ID ] ) ) {
+						continue;
+					}
+
+					$lookup = $results[ $user->ID ];
+					if ( is_array( $lookup ) && ! empty( $lookup['valid'] ) ) {
+						update_user_meta( $user->ID, 'billing_phone', $lookup['formatted'] );
+						update_user_meta( $user->ID, '_om_phone_valid', '1' );
+						++$validated;
+					} else {
+						update_user_meta( $user->ID, '_om_phone_valid', '-1' );
+						++$failed;
+					}
 				}
 			}
 
