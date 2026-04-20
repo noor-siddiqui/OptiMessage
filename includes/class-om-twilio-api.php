@@ -134,20 +134,13 @@ class OM_Twilio_API {
 	}
 
 	/**
-	 * Verify phone number via Twilio Lookup v2
+	 * Get the Twilio Lookup v2 URL for a phone number.
 	 *
-	 * @param  string $phone        Phone number to lookup.
-	 * @param  string $country_code (Optional) ISO Country Code (e.g. US, BD).
-	 * @return array|bool Array with 'formatted' and 'valid', or false on API error.
+	 * @param  string $phone        Phone number.
+	 * @param  string $country_code Country code.
+	 * @return string
 	 */
-	public static function lookup_phone( $phone, $country_code = '' ) {
-		$sid   = get_option( 'om_twilio_sid' );
-		$token = get_option( 'om_twilio_token' );
-
-		if ( empty( $sid ) || empty( $token ) || empty( $phone ) ) {
-			return false;
-		}
-
+	private static function get_lookup_request_url( $phone, $country_code = '' ) {
 		$clean_phone = trim( $phone );
 		$has_plus    = str_starts_with( $clean_phone, '+' );
 
@@ -170,6 +163,26 @@ class OM_Twilio_API {
 			}
 		}
 
+		return $url;
+	}
+
+	/**
+	 * Verify phone number via Twilio Lookup v2
+	 *
+	 * @param  string $phone        Phone number to lookup.
+	 * @param  string $country_code (Optional) ISO Country Code (e.g. US, BD).
+	 * @return array|bool Array with 'formatted' and 'valid', or false on API error.
+	 */
+	public static function lookup_phone( $phone, $country_code = '' ) {
+		$sid   = get_option( 'om_twilio_sid' );
+		$token = get_option( 'om_twilio_token' );
+
+		if ( empty( $sid ) || empty( $token ) || empty( $phone ) ) {
+			return false;
+		}
+
+		$url = self::get_lookup_request_url( $phone, $country_code );
+
 		$args = array(
 			'method'  => 'GET',
 			'headers' => array(
@@ -185,12 +198,84 @@ class OM_Twilio_API {
 		}
 
 		$body = wp_remote_retrieve_body( $response );
+		return self::parse_lookup_response( $body, $phone );
+	}
+
+	/**
+	 * Perform multiple phone lookups in parallel.
+	 *
+	 * @param array $requests Array of requests, each being ['phone' => ..., 'country' => ...].
+	 * @return array Array of results, indexed by the same keys as $requests.
+	 */
+	public static function lookup_phone_batch( array $requests ) {
+		$sid   = get_option( 'om_twilio_sid' );
+		$token = get_option( 'om_twilio_token' );
+
+		if ( empty( $sid ) || empty( $token ) || empty( $requests ) ) {
+			return array();
+		}
+
+		if ( ! function_exists( 'curl_multi_init' ) ) {
+			// Fallback to synchronous if curl_multi is not available.
+			$results = array();
+			foreach ( $requests as $key => $req ) {
+				$results[ $key ] = self::lookup_phone( $req['phone'], isset( $req['country'] ) ? $req['country'] : '' );
+			}
+			return $results;
+		}
+
+		$mh      = curl_multi_init();
+		$curls   = array();
+		$results = array();
+		$auth    = base64_encode( "$sid:$token" );
+
+		foreach ( $requests as $key => $req ) {
+			$url = self::get_lookup_request_url( $req['phone'], isset( $req['country'] ) ? $req['country'] : '' );
+
+			$ch = curl_init();
+			curl_setopt( $ch, CURLOPT_URL, $url );
+			curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+			curl_setopt( $ch, CURLOPT_TIMEOUT, 15 );
+			curl_setopt( $ch, CURLOPT_HTTPHEADER, array( "Authorization: Basic $auth" ) );
+
+			curl_multi_add_handle( $mh, $ch );
+			$curls[ $key ] = $ch;
+		}
+
+		$active = null;
+		do {
+			$status = curl_multi_exec( $mh, $active );
+			if ( $active ) {
+				curl_multi_select( $mh );
+			}
+		} while ( $active && CURLM_OK === $status );
+
+		foreach ( $curls as $key => $ch ) {
+			$body = curl_multi_getcontent( $ch );
+			$results[ $key ] = self::parse_lookup_response( $body, $requests[ $key ]['phone'] );
+			curl_multi_remove_handle( $mh, $ch );
+			curl_close( $ch );
+		}
+
+		curl_multi_close( $mh );
+
+		return $results;
+	}
+
+	/**
+	 * Parse the JSON response from Twilio Lookup API.
+	 *
+	 * @param string $body  JSON response body.
+	 * @param string $phone Original phone number for fallback.
+	 * @return array|bool
+	 */
+	private static function parse_lookup_response( $body, $phone ) {
 		$data = json_decode( $body );
 
 		if ( isset( $data->valid ) ) {
 			return array(
 				'valid'     => (bool) $data->valid,
-				'formatted' => isset( $data->phone_number ) ? $data->phone_number : $lookup_number,
+				'formatted' => isset( $data->phone_number ) ? $data->phone_number : $phone,
 			);
 		}
 
@@ -198,7 +283,7 @@ class OM_Twilio_API {
 		if ( isset( $data->code ) ) {
 			return array(
 				'valid'     => false,
-				'formatted' => $lookup_number,
+				'formatted' => $phone,
 			);
 		}
 
