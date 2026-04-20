@@ -78,14 +78,11 @@ class OM_User_Profile {
 			$old_phone     = get_user_meta( $user_id, 'billing_phone', true );
 
 			if ( $phone !== $old_phone || empty( $current_valid ) ) {
-				$lookup = OM_Twilio_API::lookup_phone( $phone );
-				if ( is_array( $lookup ) ) {
-					if ( $lookup['valid'] ) {
-						update_user_meta( $user_id, 'billing_phone', $lookup['formatted'] );
-						update_user_meta( $user_id, '_om_phone_valid', '1' );
-					} else {
-						update_user_meta( $user_id, '_om_phone_valid', '-1' );
-					}
+				// Decouple Twilio API lookup to prevent blocking the profile save.
+				if ( function_exists( 'as_enqueue_async_action' ) ) {
+					as_enqueue_async_action( 'om_async_twilio_lookup_user_job', array( $user_id ) );
+				} else {
+					wp_schedule_single_event( time(), 'om_async_twilio_lookup_user_job', array( $user_id ) );
 				}
 			}
 		}

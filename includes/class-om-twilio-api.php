@@ -75,17 +75,20 @@ class OM_Twilio_API {
 			return false;
 		}
 
-		$body = wp_remote_retrieve_body( $response );
-		$data = json_decode( $body );
+		$http_code = (int) wp_remote_retrieve_response_code( $response );
+		$body      = wp_remote_retrieve_body( $response );
+		$data      = json_decode( $body );
 
-		$twilio_err = '';
-		if ( isset( $data->message ) && ! empty( $data->message ) && ( ! isset( $data->status ) || in_array( $data->status, array( 400, 401, 403, 404, 500 ) ) ) ) {
-			$twilio_err = $data->message;
-		} elseif ( isset( $data->error_message ) && ! empty( $data->error_message ) ) {
-			$twilio_err = $data->error_message;
-		}
-
-		if ( $twilio_err ) {
+		// Twilio returns 201 on successful message creation; anything else is an error.
+		if ( 201 !== $http_code ) {
+			$twilio_err = '';
+			if ( isset( $data->message ) && ! empty( $data->message ) ) {
+				$twilio_err = $data->message;
+			} elseif ( isset( $data->error_message ) && ! empty( $data->error_message ) ) {
+				$twilio_err = $data->error_message;
+			} else {
+				$twilio_err = 'HTTP ' . $http_code;
+			}
 			self::log_sms( $to_clean, '', $message, 'failed', $user_id, $order_id, sanitize_text_field( $twilio_err ) );
 			return false;
 		}
@@ -93,7 +96,7 @@ class OM_Twilio_API {
 		$message_sid = isset( $data->sid ) ? sanitize_text_field( $data->sid ) : '';
 		$status      = isset( $data->status ) ? sanitize_text_field( $data->status ) : 'unknown';
 
-		if ( in_array( $status, array( 'queued', 'sent', 'delivered' ) ) ) {
+		if ( in_array( $status, array( 'queued', 'sent', 'delivered', 'accepted' ), true ) ) {
 			self::log_sms( $to_clean, $message_sid, $message, $status, $user_id, $order_id, '' );
 			return true;
 		} else {

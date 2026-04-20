@@ -177,6 +177,12 @@ class OM_WooCommerce {
 			return;
 		}
 
+		// ⚡ The Fix: Prevent Double-Lookups
+		// If our JIT validation already formatted this number, skip it to save Twilio API costs!
+		if ( '' !== $order->get_meta( '_om_phone_valid' ) ) {
+			return;
+		}
+
 		$phone = $order->get_billing_phone();
 		if ( empty( $phone ) ) {
 			return;
@@ -236,7 +242,7 @@ class OM_WooCommerce {
 		$user_id = $order->get_user_id();
 		if ( $user_id ) {
 			$user_consent = get_user_meta( $user_id, 'optimessage/sms-consent', true );
-			return ( '1' == $user_consent || 'yes' === strtolower( $user_consent ) || 'on' === strtolower( $user_consent ) || 'true' === strtolower( $user_consent ) );
+			return ( '1' === $user_consent || 'yes' === strtolower( $user_consent ) || 'on' === strtolower( $user_consent ) || 'true' === strtolower( $user_consent ) );
 		}
 
 		return false;
@@ -249,6 +255,10 @@ class OM_WooCommerce {
 	 * @param WC_Order $order    Order Object.
 	 */
 	public function trigger_order_placed( $order_id, $order ) {
+		if ( ! $order instanceof WC_Order ) {
+			return;
+		}
+
 		if ( ! $this->has_consent( $order ) ) {
 			return;
 		}
@@ -264,6 +274,10 @@ class OM_WooCommerce {
 	 * @param WC_Order $order    Order Object.
 	 */
 	public function trigger_order_completed( $order_id, $order ) {
+		if ( ! $order instanceof WC_Order ) {
+			return;
+		}
+
 		if ( ! $this->has_consent( $order ) ) {
 			return;
 		}
@@ -279,6 +293,10 @@ class OM_WooCommerce {
 	 * @param WC_Order $order    Order Object.
 	 */
 	public function trigger_order_on_hold( $order_id, $order ) {
+		if ( ! $order instanceof WC_Order ) {
+			return;
+		}
+
 		if ( ! $this->has_consent( $order ) ) {
 			return;
 		}
@@ -294,6 +312,10 @@ class OM_WooCommerce {
 	 * @param WC_Order $order    Order Object.
 	 */
 	public function trigger_order_cancelled( $order_id, $order ) {
+		if ( ! $order instanceof WC_Order ) {
+			return;
+		}
+
 		if ( ! $this->has_consent( $order ) ) {
 			return;
 		}
@@ -309,6 +331,10 @@ class OM_WooCommerce {
 	 * @param WC_Order $order    Order Object.
 	 */
 	public function trigger_order_refunded( $order_id, $order ) {
+		if ( ! $order instanceof WC_Order ) {
+			return;
+		}
+
 		if ( ! $this->has_consent( $order ) ) {
 			return;
 		}
@@ -335,6 +361,19 @@ class OM_WooCommerce {
 		}
 
 		if ( empty( $template ) ) {
+			return;
+		}
+
+		// ⚡ The Fix: Just-In-Time (JIT) Validation
+		// If the async formatting job hasn't run yet, force it to run right now.
+		if ( '' === $order->get_meta( '_om_phone_valid' ) ) {
+			$this->process_async_twilio_lookup( $order->get_id() );
+			// Reload the order from the database to grab the newly formatted phone number.
+			$order = wc_get_order( $order->get_id() );
+		}
+
+		// If Twilio explicitly flagged the number as invalid (-1), don't waste money trying to send an SMS.
+		if ( '-1' === $order->get_meta( '_om_phone_valid' ) ) {
 			return;
 		}
 

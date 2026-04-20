@@ -33,9 +33,45 @@ class OM_Webhook {
 			array(
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'handle_webhook' ),
-				'permission_callback' => '__return_true', // Twilio hits this publicly.
+				'permission_callback' => array( $this, 'verify_twilio_signature' ),
 			)
 		);
+	}
+
+	/**
+	 * Verify the incoming request is genuinely from Twilio using X-Twilio-Signature.
+	 *
+	 * @param  WP_REST_Request $request Request object.
+	 * @return bool|WP_Error True if valid, WP_Error otherwise.
+	 */
+	public function verify_twilio_signature( WP_REST_Request $request ) {
+		$token = get_option( 'om_twilio_token' );
+		if ( empty( $token ) ) {
+			return new WP_Error( 'om_webhook_no_token', 'Twilio Auth Token not configured.', array( 'status' => 403 ) );
+		}
+
+		$signature = $request->get_header( 'X-Twilio-Signature' );
+		if ( empty( $signature ) ) {
+			return new WP_Error( 'om_webhook_no_sig', 'Missing Twilio signature.', array( 'status' => 403 ) );
+		}
+
+		$url    = rest_url( 'om/v1/twilio-webhook' );
+		$params = $request->get_body_params();
+
+		// Twilio validation: sort POST params by key, concatenate key+value, HMAC-SHA1 with Auth Token.
+		ksort( $params );
+		$data = $url;
+		foreach ( $params as $key => $value ) {
+			$data .= $key . $value;
+		}
+
+		$expected = base64_encode( hash_hmac( 'sha1', $data, $token, true ) );
+
+		if ( ! hash_equals( $expected, $signature ) ) {
+			return new WP_Error( 'om_webhook_invalid_sig', 'Invalid Twilio signature.', array( 'status' => 403 ) );
+		}
+
+		return true;
 	}
 
 	/**

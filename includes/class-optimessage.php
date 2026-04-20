@@ -35,7 +35,7 @@ class OptiMessage {
 	/**
 	 * Constructor
 	 */
-	public function __construct() {
+	private function __construct() {
 		$this->includes();
 		$this->init_hooks();
 	}
@@ -76,6 +76,10 @@ class OptiMessage {
 	 * Admin setup notice
 	 */
 	public function admin_setup_notice() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+
 		if ( ! get_option( 'om_twilio_sid' ) || ! get_option( 'om_twilio_token' ) ) {
 			$settings_url = admin_url( 'admin.php?page=om-settings&tab=api' );
 			?>

@@ -22,20 +22,28 @@ class OM_Settings {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
-		add_action( 'admin_footer', array( $this, 'render_sms_character_counter_js' ) );
+		add_action( 'admin_footer-toplevel_page_om-settings', array( $this, 'render_sms_character_counter_js' ) );
 	}
 
 	/**
 	 * Add settings page to the admin menu.
 	 */
 	public function add_settings_page() {
+		// Cache the base64-encoded SVG to avoid reading from disk on every admin page load.
+		static $icon_data = null;
+		if ( null === $icon_data ) {
+			$icon_path = OM_PLUGIN_DIR . '/includes/icon.svg';
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a local bundled SVG icon.
+			$icon_data = 'data:image/svg+xml;base64,' . base64_encode( file_get_contents( $icon_path ) );
+		}
+
 		add_menu_page(
 			__( 'OptiMessage', 'optimessage' ),
 			__( 'OptiMessage', 'optimessage' ),
-			'manage_options',
+			'manage_woocommerce',
 			'om-settings',
 			array( $this, 'render_settings_page' ),
-			'data:image/svg+xml;base64,' . base64_encode( file_get_contents( OM_PLUGIN_DIR . '/includes/icon.svg' ) ),
+			$icon_data,
 			56
 		);
 	}
@@ -147,12 +155,12 @@ class OM_Settings {
 			)
 		);
 
-		// Template Settings.
-		register_setting( 'om_templates_group', 'om_tpl_placed', array( 'sanitize_callback' => 'wp_kses_post' ) );
-		register_setting( 'om_templates_group', 'om_tpl_completed', array( 'sanitize_callback' => 'wp_kses_post' ) );
-		register_setting( 'om_templates_group', 'om_tpl_on_hold', array( 'sanitize_callback' => 'wp_kses_post' ) );
-		register_setting( 'om_templates_group', 'om_tpl_cancelled', array( 'sanitize_callback' => 'wp_kses_post' ) );
-		register_setting( 'om_templates_group', 'om_tpl_refunded', array( 'sanitize_callback' => 'wp_kses_post' ) );
+		// Template Settings — use sanitize_textarea_field since SMS messages are plain text.
+		register_setting( 'om_templates_group', 'om_tpl_placed', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
+		register_setting( 'om_templates_group', 'om_tpl_completed', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
+		register_setting( 'om_templates_group', 'om_tpl_on_hold', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
+		register_setting( 'om_templates_group', 'om_tpl_cancelled', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
+		register_setting( 'om_templates_group', 'om_tpl_refunded', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 	}
 
 	/**
@@ -436,11 +444,6 @@ class OM_Settings {
 	 * Inject JavaScript for SMS Character & Segment Counting.
 	 */
 	public function render_sms_character_counter_js() {
-		// Only run on our settings page.
-		$screen = get_current_screen();
-		if ( ! $screen || strpos( $screen->id, 'om-settings' ) === false ) {
-			return;
-		}
 		?>
 		<script type="text/javascript">
 			jQuery(document).ready(function($) {

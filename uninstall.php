@@ -50,3 +50,21 @@ delete_option( 'om_tpl_completed' );
 delete_option( 'om_tpl_on_hold' );
 delete_option( 'om_tpl_cancelled' );
 delete_option( 'om_tpl_refunded' );
+
+// Clean up user meta left by the plugin.
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Cleanup during uninstall.
+$wpdb->query( "DELETE FROM {$wpdb->usermeta} WHERE meta_key IN ('optimessage/sms-consent', '_om_phone_valid')" );
+
+// Clean up order meta (HPOS-compatible via wc_orders_meta if table exists, plus legacy postmeta).
+$hpos_meta_table = $wpdb->prefix . 'wc_orders_meta';
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Cleanup during uninstall.
+if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $hpos_meta_table ) ) === $hpos_meta_table ) {
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Cleanup during uninstall; table name from $wpdb->prefix.
+	$wpdb->query( "DELETE FROM {$hpos_meta_table} WHERE meta_key IN ('_om_phone_valid', '_om_sms_consent', '_wc_other/om/sms_consent', 'om/sms_consent')" );
+}
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Cleanup during uninstall.
+$wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_key IN ('_om_phone_valid', '_om_sms_consent')" );
+
+// Clean up transients.
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Cleanup during uninstall.
+$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_om_%' OR option_name LIKE '_transient_timeout_om_%'" );
