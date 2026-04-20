@@ -40,6 +40,9 @@ class OM_WooCommerce {
 
 		// Async Twilio Lookup.
 		add_action( 'om_async_twilio_lookup_job', array( $this, 'process_async_twilio_lookup' ) );
+
+		// ⚡ NEW: Async SMS Sending.
+		add_action( 'om_async_send_sms_job', array( $this, 'process_async_sms_job' ), 10, 4 );
 	}
 
 	/**
@@ -383,7 +386,15 @@ class OM_WooCommerce {
 		}
 
 		$message = $this->parse_template( $template, $order );
-		OM_Twilio_API::send_sms( $phone, $message, $order->get_user_id(), $order->get_id() );
+
+		// ⚡ The Upgrade: True Async SMS Sending
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			// Push it to the WooCommerce Action Scheduler queue.
+			as_enqueue_async_action( 'om_async_send_sms_job', array( $phone, $message, $order->get_user_id(), $order->get_id() ) );
+		} else {
+			// Fallback to standard WP-Cron just in case.
+			wp_schedule_single_event( time(), 'om_async_send_sms_job', array( $phone, $message, $order->get_user_id(), $order->get_id() ) );
+		}
 	}
 
 	/**
@@ -430,6 +441,18 @@ class OM_WooCommerce {
 		);
 
 		return str_replace( array_keys( $replacements ), array_values( $replacements ), $template );
+	}
+
+	/**
+	 * Process async SMS sending job.
+	 *
+	 * @param string $phone    The recipient phone number.
+	 * @param string $message  The message text.
+	 * @param int    $user_id  The user ID.
+	 * @param int    $order_id The order ID.
+	 */
+	public function process_async_sms_job( $phone, $message, $user_id, $order_id ) {
+		OM_Twilio_API::send_sms( $phone, $message, $user_id, $order_id );
 	}
 }
 
