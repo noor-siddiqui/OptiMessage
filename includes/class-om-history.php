@@ -194,6 +194,12 @@ class OM_History {
 				$date_format     = get_option( 'date_format' );
 				$time_format     = get_option( 'time_format' );
 				$datetime_format = $date_format . ' ' . $time_format;
+
+				// ⚡ Bolt: Prevent N+1 query bottleneck by priming the user cache.
+				$user_ids = array_filter( wp_list_pluck( $results, 'user_id' ) );
+				if ( ! empty( $user_ids ) ) {
+					cache_users( array_unique( $user_ids ) );
+				}
 				?>
 				<?php foreach ( $results as $row ) : ?>
 					<tr>
