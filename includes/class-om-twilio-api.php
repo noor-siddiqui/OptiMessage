@@ -15,8 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class OM_Twilio_API {
 
-
-
 	/**
 	 * Send SMS via Twilio and log to DB
 	 *
@@ -36,10 +34,22 @@ class OM_Twilio_API {
 			return false;
 		}
 
-		// Basic formatting: ensure $to has a '+' sign if it's purely numerical and longer than 10 digits.
-		$to_clean = preg_replace( '/[^0-9+]/', '', $to );
-		if ( ! str_starts_with( $to_clean, '+' ) ) {
-			$to_clean = '+' . $to_clean;
+		// ⚡ The Fix: Intelligent Phone Number Formatting
+		$to_clean = trim( $to );
+		$has_plus = str_starts_with( $to_clean, '+' );
+		$to_clean = preg_replace( '/[^0-9+]/', '', $to_clean );
+
+		if ( ! $has_plus ) {
+			// Do not blindly prepend '+'. Use Twilio Lookup to properly format local numbers based on the store's home country.
+			$base_country = class_exists( 'WooCommerce' ) ? WC()->countries->get_base_country() : '';
+			$lookup       = self::lookup_phone( $to_clean, $base_country );
+
+			if ( is_array( $lookup ) && $lookup['valid'] ) {
+				$to_clean = $lookup['formatted'];
+			} else {
+				// If lookup fails, leave it without the '+'. Let Twilio attempt to parse it or reject it cleanly.
+				$to_clean = preg_replace( '/[^0-9]/', '', $to_clean );
+			}
 		}
 
 		$url         = "https://api.twilio.com/2010-04-01/Accounts/$sid/Messages.json";
@@ -75,20 +85,17 @@ class OM_Twilio_API {
 			return false;
 		}
 
-		$http_code = (int) wp_remote_retrieve_response_code( $response );
-		$body      = wp_remote_retrieve_body( $response );
-		$data      = json_decode( $body );
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body );
 
-		// Twilio returns 201 on successful message creation; anything else is an error.
-		if ( 201 !== $http_code ) {
-			$twilio_err = '';
-			if ( isset( $data->message ) && ! empty( $data->message ) ) {
-				$twilio_err = $data->message;
-			} elseif ( isset( $data->error_message ) && ! empty( $data->error_message ) ) {
-				$twilio_err = $data->error_message;
-			} else {
-				$twilio_err = 'HTTP ' . $http_code;
-			}
+		$twilio_err = '';
+		if ( isset( $data->message ) && ! empty( $data->message ) && ( ! isset( $data->status ) || in_array( $data->status, array( 400, 401, 403, 404, 500 ) ) ) ) {
+			$twilio_err = $data->message;
+		} elseif ( isset( $data->error_message ) && ! empty( $data->error_message ) ) {
+			$twilio_err = $data->error_message;
+		}
+
+		if ( $twilio_err ) {
 			self::log_sms( $to_clean, '', $message, 'failed', $user_id, $order_id, sanitize_text_field( $twilio_err ) );
 			return false;
 		}
@@ -96,7 +103,7 @@ class OM_Twilio_API {
 		$message_sid = isset( $data->sid ) ? sanitize_text_field( $data->sid ) : '';
 		$status      = isset( $data->status ) ? sanitize_text_field( $data->status ) : 'unknown';
 
-		if ( in_array( $status, array( 'queued', 'sent', 'delivered', 'accepted' ), true ) ) {
+		if ( in_array( $status, array( 'queued', 'sent', 'delivered' ) ) ) {
 			self::log_sms( $to_clean, $message_sid, $message, $status, $user_id, $order_id, '' );
 			return true;
 		} else {
@@ -155,12 +162,18 @@ class OM_Twilio_API {
 			$url           = 'https://lookups.twilio.com/v2/PhoneNumbers/' . urlencode( $lookup_number );
 		} else {
 			$lookup_number = $numbers_only; // National format.
-			$url           = 'https://lookups.twilio.com/v2/PhoneNumbers/' . urlencode( $lookup_number );
+
+			// ⚡ Fallback to the WooCommerce store's base country if none is provided.
+			if ( empty( $country_code ) && class_exists( 'WooCommerce' ) ) {
+				$country_code = WC()->countries->get_base_country();
+			}
+
+			$url = 'https://lookups.twilio.com/v2/PhoneNumbers/' . urlencode( $lookup_number );
 
 			if ( ! empty( $country_code ) ) {
 				$url = add_query_arg( 'CountryCode', strtoupper( sanitize_text_field( $country_code ) ), $url );
 			} else {
-				// Fallback to legacy behavior if country code is completely missing.
+				// Ultimate fallback if absolutely no country code exists.
 				$lookup_number = '+' . $numbers_only;
 				$url           = 'https://lookups.twilio.com/v2/PhoneNumbers/' . urlencode( $lookup_number );
 			}
