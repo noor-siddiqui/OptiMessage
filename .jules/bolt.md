@@ -15,3 +15,6 @@
 ## 2024-05-18 - Missing hook handler for guest customers
 **Learning:** Adding a hook for action scheduler like `om_async_twilio_lookup_job` will not work unless a handler function is implemented that process the job, or the jobs will fire into the void and data will not be processed.
 **Action:** When creating new async jobs, ensure the corresponding handler logic is implemented.
+## 2024-05-24 - Batching Twilio API Calls for Bulk Uploads
+**Learning:** Sequential synchronous Twilio lookups during CSV uploads cause severe performance bottlenecks, leading to timeouts for even moderately sized files.
+**Action:** Use `OM_Twilio_API::lookup_phone_batch` with `curl_multi_init` to process lookups concurrently in batches, drastically reducing processing time and preventing PHP timeouts.
