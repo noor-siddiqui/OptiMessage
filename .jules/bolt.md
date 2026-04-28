@@ -15,3 +15,7 @@
 ## 2024-05-18 - Missing hook handler for guest customers
 **Learning:** Adding a hook for action scheduler like `om_async_twilio_lookup_job` will not work unless a handler function is implemented that process the job, or the jobs will fire into the void and data will not be processed.
 **Action:** When creating new async jobs, ensure the corresponding handler logic is implemented.
+
+## 2024-05-18 - Replacing broad update_meta_cache with targeted DB query
+**Learning:** Using `update_meta_cache` for a large list of user IDs to avoid N+1 queries during loops loads *all* user metadata into memory. For loops that only need a single specific meta key (like `optimessage/sms-consent`), this causes significant, unnecessary memory bloat.
+**Action:** When optimizing loops that only need one or two specific meta keys across many users, replace broad `update_meta_cache` calls with a targeted `$wpdb` query that fetches only the needed `meta_key` and creates an associative map before the loop.
