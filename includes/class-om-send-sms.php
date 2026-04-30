@@ -153,15 +153,31 @@ class OM_Send_SMS {
 			);
 
 			if ( $orders ) {
-				// Pre-load user meta cache to avoid N+1 queries during the loop.
+				// Pre-fetch only the specific meta key to avoid memory bloat of update_meta_cache.
 				$customer_ids = array();
 				foreach ( $orders as $order ) {
 					if ( $order->get_customer_id() ) {
 						$customer_ids[] = $order->get_customer_id();
 					}
 				}
+
+				$user_consents_map = array();
 				if ( ! empty( $customer_ids ) ) {
-					update_meta_cache( 'user', array_unique( $customer_ids ) );
+					global $wpdb;
+					$unique_ids = array_unique( $customer_ids );
+					$ids_csv    = implode( ',', array_map( 'intval', $unique_ids ) );
+
+					// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+					$results = $wpdb->get_results(
+						"SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = 'optimessage/sms-consent' AND user_id IN ($ids_csv)"
+					);
+					// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+
+					if ( $results ) {
+						foreach ( $results as $row ) {
+							$user_consents_map[ $row->user_id ] = $row->meta_value;
+						}
+					}
 				}
 
 				foreach ( $orders as $order ) {
@@ -193,9 +209,9 @@ class OM_Send_SMS {
 						} else {
 							$customer_id = $order->get_customer_id();
 							if ( $customer_id ) {
-								$user_consent = get_user_meta( $customer_id, 'optimessage/sms-consent', true );
+								$user_consent = isset( $user_consents_map[ $customer_id ] ) ? $user_consents_map[ $customer_id ] : '';
 								if ( ! empty( $user_consent ) && ( '1' === $user_consent || 'yes' === strtolower( $user_consent ) || 'on' === strtolower( $user_consent ) || 'true' === strtolower( $user_consent ) ) ) {
-									   $has_consent = true;
+										$has_consent = true;
 								}
 							}
 						}
@@ -447,7 +463,7 @@ class OM_Send_SMS {
 		if ( false === $queue_data || empty( $queue_data['phones'] ) ) {
 			wp_send_json_success(
 				array(
-					'is_done' => true,
+					'is_done'   => true,
 					'processed' => 0,
 				)
 			);
@@ -468,7 +484,7 @@ class OM_Send_SMS {
 		$processed_count = 0;
 		foreach ( $batch as $phone => $customer_id ) {
 			OM_Twilio_API::send_sms( $phone, $message, $customer_id );
-			$processed_count++;
+			++$processed_count;
 		}
 
 		// Are we completely done?
@@ -476,7 +492,7 @@ class OM_Send_SMS {
 			delete_transient( $transient_name );
 			wp_send_json_success(
 				array(
-					'is_done' => true,
+					'is_done'   => true,
 					'processed' => $processed_count,
 				)
 			);
@@ -487,7 +503,7 @@ class OM_Send_SMS {
 
 			wp_send_json_success(
 				array(
-					'is_done' => false,
+					'is_done'   => false,
 					'processed' => $processed_count,
 				)
 			);
@@ -519,24 +535,24 @@ class OM_Send_SMS {
 				'ajax_url'    => admin_url( 'admin-ajax.php' ),
 				'batch_nonce' => wp_create_nonce( 'om_process_batch' ),
 				'strings'     => array(
-					'processing'       => __( 'Processing...', 'optimessage' ),
-					'no_customers'     => __( 'No eligible customers found.', 'optimessage' ),
-					'send_sms'         => __( 'Send SMS', 'optimessage' ),
-					'send_csv'         => __( 'Send to CSV Numbers', 'optimessage' ),
-					'error'            => __( 'Error', 'optimessage' ),
-					'sent'             => __( 'Sent', 'optimessage' ),
-					'of'               => __( 'of', 'optimessage' ),
-					'success'          => __( 'Success!', 'optimessage' ),
-					'messages_sent'    => __( 'messages sent.', 'optimessage' ),
-					'finished'         => __( 'Finished', 'optimessage' ),
-					'error_processing' => __( 'Error during processing', 'optimessage' ),
-					'server_lost'      => __( 'Server connection lost. Check history to see progress.', 'optimessage' ),
-					'reachable_all'    => __( 'Total Reachable Customers (All Products)', 'optimessage' ),
+					'processing'         => __( 'Processing...', 'optimessage' ),
+					'no_customers'       => __( 'No eligible customers found.', 'optimessage' ),
+					'send_sms'           => __( 'Send SMS', 'optimessage' ),
+					'send_csv'           => __( 'Send to CSV Numbers', 'optimessage' ),
+					'error'              => __( 'Error', 'optimessage' ),
+					'sent'               => __( 'Sent', 'optimessage' ),
+					'of'                 => __( 'of', 'optimessage' ),
+					'success'            => __( 'Success!', 'optimessage' ),
+					'messages_sent'      => __( 'messages sent.', 'optimessage' ),
+					'finished'           => __( 'Finished', 'optimessage' ),
+					'error_processing'   => __( 'Error during processing', 'optimessage' ),
+					'server_lost'        => __( 'Server connection lost. Check history to see progress.', 'optimessage' ),
+					'reachable_all'      => __( 'Total Reachable Customers (All Products)', 'optimessage' ),
 					'reachable_filtered' => __( 'Total Reachable Customers (Filtered)', 'optimessage' ),
-					'send_another'     => __( 'Send Another', 'optimessage' ),
-					'invalid_numbers'  => __( 'Invalid Numbers Skipped', 'optimessage' ),
+					'send_another'       => __( 'Send Another', 'optimessage' ),
+					'invalid_numbers'    => __( 'Invalid Numbers Skipped', 'optimessage' ),
 					// translators: %d is the number of reachable customers.
-					'validated'        => __( 'Validated! Sending to %d numbers...', 'optimessage' ),
+					'validated'          => __( 'Validated! Sending to %d numbers...', 'optimessage' ),
 				),
 			)
 		);
