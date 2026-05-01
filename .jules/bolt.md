@@ -15,3 +15,6 @@
 ## 2024-05-18 - Missing hook handler for guest customers
 **Learning:** Adding a hook for action scheduler like `om_async_twilio_lookup_job` will not work unless a handler function is implemented that process the job, or the jobs will fire into the void and data will not be processed.
 **Action:** When creating new async jobs, ensure the corresponding handler logic is implemented.
+## 2024-05-18 - Avoid Memory Bloat with Targeted WPDB queries
+**Learning:** Using `update_meta_cache()` to avoid N+1 queries when loading user data is good, but when processing large lists (like thousands of WooCommerce orders), loading ALL metadata into memory causes significant bloat.
+**Action:** When you only need one or two specific meta keys (like SMS consent), use a targeted `$wpdb->get_results()` query to fetch only those keys and map them by ID instead of calling `update_meta_cache()`.
