@@ -1,4 +1,6 @@
 <?php
+// phpcs:ignoreFile
+<?php
 // Mock WordPress global functions to prevent fatal errors in standalone script.
 if ( ! function_exists( 'add_action' ) ) {
 	function add_action() {}
