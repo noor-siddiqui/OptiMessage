@@ -179,6 +179,9 @@ class OM_Twilio_API {
 			}
 		}
 
+		// Request line type intelligence to identify landlines.
+		$url = add_query_arg( 'Fields', 'line_type_intelligence', $url );
+
 		return $url;
 	}
 
@@ -289,6 +292,11 @@ class OM_Twilio_API {
 		$data = json_decode( $body );
 
 		if ( isset( $data->valid ) ) {
+			// Check if the number is a landline, which cannot receive SMS.
+			if ( isset( $data->line_type_intelligence->type ) && 'landline' === $data->line_type_intelligence->type ) {
+				return false;
+			}
+
 			return array(
 				'valid'     => (bool) $data->valid,
 				'formatted' => isset( $data->phone_number ) ? $data->phone_number : $phone,
