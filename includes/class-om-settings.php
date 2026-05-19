@@ -154,6 +154,14 @@ class OM_Settings {
 				'default' => '_tracking_url',
 			)
 		);
+		register_setting(
+			'om_general_group',
+			'om_shorten_tracking_url',
+			array(
+				'type'    => 'boolean',
+				'default' => 0,
+			)
+		);
 
 		// Template Settings — use sanitize_textarea_field since SMS messages are plain text.
 		register_setting( 'om_templates_group', 'om_tpl_placed', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
@@ -179,6 +187,7 @@ class OM_Settings {
 				<a href="?page=om-settings&tab=subscribers" class="nav-tab <?php echo 'subscribers' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscribers', 'optimessage' ); ?></a>
 				<a href="?page=om-settings&tab=templates" class="nav-tab <?php echo 'templates' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'SMS Templates', 'optimessage' ); ?></a>
 				<a href="?page=om-settings&tab=general" class="nav-tab <?php echo 'general' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'General Settings', 'optimessage' ); ?></a>
+				<a href="?page=om-settings&tab=short_links" class="nav-tab <?php echo 'short_links' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Short Links', 'optimessage' ); ?></a>
 				<a href="?page=om-settings&tab=api" class="nav-tab <?php echo 'api' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Twilio API', 'optimessage' ); ?></a>
 			</h2>
 
@@ -210,6 +219,9 @@ class OM_Settings {
 		} elseif ( 'history' === $active_tab ) {
 			// Render history table.
 			do_action( 'om_render_history_tab' );
+		} elseif ( 'short_links' === $active_tab ) {
+			// Render short links manager.
+			do_action( 'om_render_short_links_tab' );
 		}
 		?>
 		<?php if ( in_array( $active_tab, $options_tabs, true ) ) : ?>
@@ -325,6 +337,13 @@ class OM_Settings {
 					<p class="description"><?php esc_html_e( 'The post meta key where tracking URLs are saved.', 'optimessage' ); ?></p>
 				</td>
 			</tr>
+			<tr valign="top">
+				<th scope="row"><?php esc_html_e( 'Shorten Tracking URL', 'optimessage' ); ?></th>
+				<td>
+					<input type="checkbox" name="om_shorten_tracking_url" value="1" <?php checked( 1, get_option( 'om_shorten_tracking_url', 0 ), true ); ?> />
+					<label for="om_shorten_tracking_url"><?php esc_html_e( 'Automatically shorten tracking URLs (using built-in shortener) to save SMS segments.', 'optimessage' ); ?></label>
+				</td>
+			</tr>
 		</table>
 		<script type="text/javascript">
 			jQuery(document).ready(function($) {
@@ -350,7 +369,7 @@ class OM_Settings {
 	 * Render the Templates settings tab.
 	 */
 	private function render_templates_tab() {
-		$events = array(
+		$events     = array(
 			'placed'    => get_option( 'om_wc_event_placed', 1 ),
 			'completed' => get_option( 'om_wc_event_completed', 1 ),
 			'on_hold'   => get_option( 'om_wc_event_on_hold', 0 ),

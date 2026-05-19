@@ -54,6 +54,7 @@ class OptiMessage {
 		include_once OM_PLUGIN_DIR . 'includes/class-om-subscribers-list-table.php';
 		include_once OM_PLUGIN_DIR . 'includes/class-om-guest-customers-list-table.php';
 		include_once OM_PLUGIN_DIR . 'includes/class-om-subscribers-tab.php';
+		include_once OM_PLUGIN_DIR . 'includes/class-om-short-links.php';
 	}
 
 	/**
@@ -131,7 +132,19 @@ class OptiMessage {
             PRIMARY KEY  (id)
         ) $charset_collate;";
 
+		$table_name_links = $wpdb->prefix . 'om_short_links';
+		$sql_links        = "CREATE TABLE $table_name_links (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            hash varchar(10) NOT NULL,
+            url text NOT NULL,
+            clicks int(11) DEFAULT 0 NOT NULL,
+            created_at datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+            PRIMARY KEY  (id),
+            UNIQUE KEY hash (hash)
+        ) $charset_collate;";
+
 		include_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
+		dbDelta( $sql_links );
 	}
 }

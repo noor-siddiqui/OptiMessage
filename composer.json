@@ -4,9 +4,20 @@
         "squizlabs/php_codesniffer": "^3.13",
         "wp-coding-standards/wpcs": "^3.3"
     },
-    "config": {
+        "config": {
+        "platform": {
+            "php": "8.1"
+        },
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true
         }
+    },
+    "scripts": {
+        "phpcs": "phpcs --report-file=phpcs_report.txt",
+        "phpcbf": "phpcbf",
+        "check": [
+            "@phpcbf",
+            "@phpcs"
+        ]
     }
 }

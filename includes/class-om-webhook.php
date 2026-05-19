@@ -67,27 +67,28 @@ class OM_Webhook {
 		// ⚡ The Fix: Handle Live Server Proxies & URL Re-writes
 		// Often rest_url() differs from the actual external URL Twilio hits due to load balancers (HTTP vs HTTPS).
 		$urls_to_test = array(
-			rest_url( 'om/v1/twilio-webhook' )
+			rest_url( 'om/v1/twilio-webhook' ),
 		);
 
-		// Reconstruct the exact external requested URL to bypass proxy issues
+		// Reconstruct the exact external requested URL to bypass proxy issues.
 		$protocol = ( isset( $_SERVER['HTTPS'] ) && 'on' === strtolower( $_SERVER['HTTPS'] ) ) || ( isset( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && 'https' === strtolower( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) ) ? 'https' : 'http';
-		$host = isset( $_SERVER['HTTP_HOST'] ) ? $_SERVER['HTTP_HOST'] : '';
-		$uri  = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
-		
+		$host     = isset( $_SERVER['HTTP_HOST'] ) ? $_SERVER['HTTP_HOST'] : '';
+		$uri      = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
+
 		if ( $host && $uri ) {
 			$reconstructed_url = $protocol . '://' . $host . $uri;
 			$urls_to_test[]    = $reconstructed_url;
-			// Also account for potential trailing slash differences caused by server redirects
-			$urls_to_test[]    = rtrim( $reconstructed_url, '/' );
-			$urls_to_test[]    = rtrim( $reconstructed_url, '/' ) . '/';
+			// Also account for potential trailing slash differences caused by server redirects.
+			$urls_to_test[] = rtrim( $reconstructed_url, '/' );
+			$urls_to_test[] = rtrim( $reconstructed_url, '/' ) . '/';
 		}
 
 		$urls_to_test = array_unique( $urls_to_test );
 		$is_valid     = false;
 
 		foreach ( $urls_to_test as $url ) {
-			$data     = $url . $post_data;
+			$data = $url . $post_data;
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
 			$expected = base64_encode( hash_hmac( 'sha1', $data, $token, true ) );
 
 			if ( hash_equals( $expected, $signature ) ) {
@@ -97,6 +98,7 @@ class OM_Webhook {
 		}
 
 		if ( ! $is_valid ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log, WordPress.PHP.DevelopmentFunctions.error_log_print_r
 			error_log( 'OptiMessage Webhook Error: Invalid Twilio signature. Request URLs tested: ' . print_r( $urls_to_test, true ) );
 			return new WP_Error( 'om_webhook_invalid_sig', 'Invalid Twilio signature.', array( 'status' => 403 ) );
 		}

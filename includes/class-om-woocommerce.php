@@ -26,10 +26,10 @@ class OM_WooCommerce {
 		// Legacy Checkout.
 		add_action( 'woocommerce_review_order_before_submit', array( $this, 'legacy_add_checkout_consent_checkbox' ) );
 		add_action( 'woocommerce_checkout_process', array( $this, 'legacy_checkout_process' ) );
-		add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'legacy_save_checkout_consent' ), 10, 2 );
+		add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'legacy_save_checkout_consent' ) );
 
 		// Blocks Checkout Save Hook for User Meta & Twilio Lookup.
-		add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( $this, 'block_save_checkout_consent' ), 10, 2 );
+		add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( $this, 'block_save_checkout_consent' ) );
 
 		// Order Statuses for SMS.
 		add_action( 'woocommerce_order_status_processing', array( $this, 'trigger_order_placed' ), 10, 2 );
@@ -43,6 +43,9 @@ class OM_WooCommerce {
 
 		// ⚡ NEW: Async SMS Sending.
 		add_action( 'om_async_send_sms_job', array( $this, 'process_async_sms_job' ), 10, 4 );
+
+		// Built-in short URL redirect listener.
+		add_action( 'init', array( $this, 'handle_short_url_redirect' ) );
 	}
 
 	/**
@@ -108,10 +111,9 @@ class OM_WooCommerce {
 	/**
 	 * Block save checkout consent.
 	 *
-	 * @param WC_Order $order   The order object.
-	 * @param array    $request The request array.
+	 * @param WC_Order $order The order object.
 	 */
-	public function block_save_checkout_consent( $order, $request ) {
+	public function block_save_checkout_consent( $order ) {
 		if ( ! get_option( 'om_consent_checkout', 0 ) ) {
 			return;
 		}
@@ -121,10 +123,9 @@ class OM_WooCommerce {
 	/**
 	 * Legacy save checkout consent.
 	 *
-	 * @param int   $order_id The order ID.
-	 * @param array $data     The posted data.
+	 * @param int $order_id The order ID.
 	 */
-	public function legacy_save_checkout_consent( $order_id, $data ) {
+	public function legacy_save_checkout_consent( $order_id ) {
 		if ( ! get_option( 'om_consent_checkout', 0 ) ) {
 			return;
 		}
@@ -426,6 +427,10 @@ class OM_WooCommerce {
 			}
 		}
 
+		if ( get_option( 'om_shorten_tracking_url', 0 ) && ! empty( $track_url ) ) {
+			$track_url = $this->shorten_url( $track_url, $order );
+		}
+
 		$replacements = array(
 			'{order_id}'          => $order->get_id(),
 			'{first_name}'        => $order->get_billing_first_name(),
@@ -441,6 +446,80 @@ class OM_WooCommerce {
 		);
 
 		return str_replace( array_keys( $replacements ), array_values( $replacements ), $template );
+	}
+
+	/**
+	 * Shorten URL using the built-in OptiMessage shortener.
+	 *
+	 * @param string   $url   The URL to shorten.
+	 * @param WC_Order $order The order object.
+	 * @return string The shortened URL.
+	 */
+	private function shorten_url( $url, $order ) {
+		if ( empty( $url ) || ! $order ) {
+			return $url;
+		}
+
+		$order_id = $order->get_id();
+		// Create a 5-character hash to prevent guessing order tracking URLs.
+		$hash = substr( wp_hash( $order_id . $url ), 0, 5 );
+
+		// Use a very short internal URL: e.g. site.com/?omt=123xABCDE.
+		return home_url( '/?omt=' . $order_id . 'x' . $hash );
+	}
+
+	/**
+	 * Handle redirection for the built-in short URLs.
+	 */
+	public function handle_short_url_redirect() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! empty( $_GET['omt'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$omt   = sanitize_text_field( wp_unslash( $_GET['omt'] ) );
+			$parts = explode( 'x', $omt );
+
+			if ( 2 === count( $parts ) ) {
+				$order_id = intval( $parts[0] );
+				$hash     = $parts[1];
+
+				$order = wc_get_order( $order_id );
+				if ( $order ) {
+					$tracking_url_key = get_option( 'om_track_url_key', '_tracking_url' );
+					$track_url        = $order->get_meta( $tracking_url_key, true );
+
+					// Fallback: Parse PirateShip Order Notes.
+					if ( empty( $track_url ) ) {
+						$tracking_num_key = get_option( 'om_track_number_key', '_tracking_number' );
+						$track_num        = $order->get_meta( $tracking_num_key, true );
+						$notes            = wc_get_order_notes( array( 'order_id' => $order_id ) );
+						foreach ( $notes as $note ) {
+							if ( preg_match( '/shipped via (.*?) with tracking number.*?href=[\'"](.*?)[\'"].*?>(.*?)<\/a>/is', $note->content, $matches ) ) {
+								$track_url = trim( $matches[2] );
+								break;
+							}
+						}
+					}
+
+					if ( ! empty( $track_url ) ) {
+						$expected_hash = substr( wp_hash( $order_id . $track_url ), 0, 5 );
+						if ( hash_equals( $expected_hash, $hash ) ) {
+							// Record click analytics.
+							$clicks = (int) $order->get_meta( '_om_short_url_clicks', true );
+							$order->update_meta_data( '_om_short_url_clicks', $clicks + 1 );
+							$order->save_meta_data();
+
+							// phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
+							wp_redirect( esc_url_raw( $track_url ) );
+							exit;
+						}
+					}
+				}
+			}
+
+			// If invalid or not found, safely redirect to the homepage.
+			wp_safe_redirect( home_url() );
+			exit;
+		}
 	}
 
 	/**

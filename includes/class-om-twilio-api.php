@@ -270,7 +270,7 @@ class OM_Twilio_API {
 		} while ( $active && CURLM_OK === $status );
 
 		foreach ( $curls as $key => $ch ) {
-			$body = curl_multi_getcontent( $ch );
+			$body            = curl_multi_getcontent( $ch );
 			$results[ $key ] = self::parse_lookup_response( $body, $requests[ $key ]['phone'] );
 			curl_multi_remove_handle( $mh, $ch );
 			curl_close( $ch );

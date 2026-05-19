@@ -269,9 +269,9 @@ class OM_Subscribers_Tab {
 			// Count remaining.
 			$remaining_query = new WP_User_Query(
 				array(
-					'number'     => 1,
+					'number'      => 1,
 					'count_total' => true,
-					'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+					'meta_query'  => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 						'relation' => 'AND',
 						array(
 							'key'     => 'billing_phone',

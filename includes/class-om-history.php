@@ -172,9 +172,10 @@ class OM_History {
 					<th scope="col" class="manage-column column-id" width="5%"><?php esc_html_e( 'ID', 'optimessage' ); ?></th>
 					<th scope="col" class="manage-column" width="15%"><?php esc_html_e( 'Date', 'optimessage' ); ?></th>
 					<th scope="col" class="manage-column" width="15%"><?php esc_html_e( 'To', 'optimessage' ); ?></th>
-					<th scope="col" class="manage-column" width="35%"><?php esc_html_e( 'Message', 'optimessage' ); ?></th>
+					<th scope="col" class="manage-column" width="30%"><?php esc_html_e( 'Message', 'optimessage' ); ?></th>
 					<th scope="col" class="manage-column" width="10%"><?php esc_html_e( 'Status', 'optimessage' ); ?></th>
-					<th scope="col" class="manage-column" width="20%"><?php esc_html_e( 'Error/Details', 'optimessage' ); ?></th>
+					<th scope="col" class="manage-column" width="10%"><?php esc_html_e( 'Clicks', 'optimessage' ); ?></th>
+					<th scope="col" class="manage-column" width="15%"><?php esc_html_e( 'Error/Details', 'optimessage' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -216,12 +217,27 @@ class OM_History {
 							echo '<span style="color:' . esc_attr( $color ) . ';font-weight:bold;">' . esc_html( ucfirst( $row->status ) ) . '</span>';
 							?>
 						</td>
+						<td>
+							<?php
+							if ( $row->order_id ) {
+								$order = wc_get_order( $row->order_id );
+								if ( $order ) {
+									$clicks = $order->get_meta( '_om_short_url_clicks', true );
+									echo esc_html( $clicks ? (int) $clicks : 0 );
+								} else {
+									echo '-';
+								}
+							} else {
+								echo '-';
+							}
+							?>
+						</td>
 						<td><?php echo esc_html( $row->error_message ); ?></td>
 					</tr>
 				<?php endforeach; ?>
 			<?php else : ?>
 				<tr>
-					<td colspan="6"><?php esc_html_e( 'No SMS history found.', 'optimessage' ); ?></td>
+					<td colspan="7"><?php esc_html_e( 'No SMS history found.', 'optimessage' ); ?></td>
 				</tr>
 			<?php endif; ?>
 			</tbody>
