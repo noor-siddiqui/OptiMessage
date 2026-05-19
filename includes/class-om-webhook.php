@@ -135,10 +135,11 @@ class OM_Webhook {
 
 			// If the message has reached a final state, enqueue a job to fetch its price from Twilio.
 			if ( in_array( $status, array( 'delivered', 'undelivered', 'failed' ), true ) ) {
-				if ( function_exists( 'as_enqueue_async_action' ) ) {
-					as_enqueue_async_action( 'om_async_fetch_sms_price_job', array( $message_sid ) );
+				$delay = 300; // Wait 5 minutes to give Twilio time to calculate and populate the price.
+				if ( function_exists( 'as_schedule_single_action' ) ) {
+					as_schedule_single_action( time() + $delay, 'om_async_fetch_sms_price_job', array( $message_sid ) );
 				} else {
-					wp_schedule_single_event( time(), 'om_async_fetch_sms_price_job', array( $message_sid ) );
+					wp_schedule_single_event( time() + $delay, 'om_async_fetch_sms_price_job', array( $message_sid ) );
 				}
 			}
 		}

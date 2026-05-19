@@ -45,7 +45,7 @@ class OM_WooCommerce {
 		add_action( 'om_async_send_sms_job', array( $this, 'process_async_sms_job' ), 10, 4 );
 
 		// Async fetch SMS price.
-		add_action( 'om_async_fetch_sms_price_job', array( $this, 'process_async_fetch_sms_price_job' ) );
+		add_action( 'om_async_fetch_sms_price_job', array( $this, 'process_async_fetch_sms_price_job' ), 10, 2 );
 
 		// Built-in short URL redirect listener.
 		add_action( 'init', array( $this, 'handle_short_url_redirect' ) );
@@ -541,11 +541,26 @@ class OM_WooCommerce {
 	 * Process async SMS price fetching job.
 	 *
 	 * @param string $message_sid The Twilio Message SID.
+	 * @param int    $retry_count The number of times this job has been retried.
 	 */
-	public function process_async_fetch_sms_price_job( $message_sid ) {
+	public function process_async_fetch_sms_price_job( $message_sid, $retry_count = 0 ) {
 		global $wpdb;
 
 		$price = OM_Twilio_API::fetch_message_price( $message_sid );
+
+		if ( 'pending' === $price ) {
+			// Twilio hasn't calculated the price yet. Retry up to 6 times (30 minutes total).
+			$max_retries = 6;
+			if ( $retry_count < $max_retries ) {
+				$delay = 300;
+				if ( function_exists( 'as_schedule_single_action' ) ) {
+					as_schedule_single_action( time() + $delay, 'om_async_fetch_sms_price_job', array( $message_sid, $retry_count + 1 ) );
+				} else {
+					wp_schedule_single_event( time() + $delay, 'om_async_fetch_sms_price_job', array( $message_sid, $retry_count + 1 ) );
+				}
+			}
+			return;
+		}
 
 		if ( false !== $price ) {
 			$table_name = $wpdb->prefix . 'om_sms_history';

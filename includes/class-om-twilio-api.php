@@ -318,7 +318,7 @@ class OM_Twilio_API {
 	 * Fetch message price from Twilio API.
 	 *
 	 * @param string $message_sid The Twilio Message SID.
-	 * @return float|bool The price of the message or false on failure.
+	 * @return float|string|bool The price of the message, 'pending' if not ready, or false on failure.
 	 */
 	public static function fetch_message_price( $message_sid ) {
 		$sid   = get_option( 'om_twilio_sid' );
@@ -347,10 +347,17 @@ class OM_Twilio_API {
 		$body = wp_remote_retrieve_body( $response );
 		$data = json_decode( $body );
 
+		if ( ! is_object( $data ) ) {
+			return false;
+		}
+
 		if ( isset( $data->price ) && is_numeric( $data->price ) ) {
 			// Twilio returns negative prices (e.g., -0.0075) to indicate cost.
 			// We store it as a positive absolute value.
 			return abs( (float) $data->price );
+		} elseif ( property_exists( $data, 'price' ) && is_null( $data->price ) ) {
+			// Twilio has not yet calculated the price.
+			return 'pending';
 		}
 
 		return false;
