@@ -2,7 +2,7 @@
 /**
  * Plugin Name: OptiMessage
  * Description: A powerful, open source SMS notification and bulk messaging framework scaling Twilio for WooCommerce.
- * Version: 0.5.0_beta
+ * Version: 0.5.1_beta
  * Author: Noor Nabiul Alam Siddiqui
  * GitHub Plugin URI: https://github.com/noor-siddiqui/OptiMessage
  *
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-define( 'OM_VERSION', '0.5.0_beta' );
+define( 'OM_VERSION', '0.5.1_beta' );
 define( 'OM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
