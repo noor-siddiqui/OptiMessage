@@ -128,6 +128,7 @@ class OptiMessage {
             sent_at datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
             user_id bigint(20) DEFAULT 0,
             order_id bigint(20) DEFAULT 0,
+            price decimal(10,5) DEFAULT 0.00000,
             error_message text,
             PRIMARY KEY  (id)
         ) $charset_collate;";

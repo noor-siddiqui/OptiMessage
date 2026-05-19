@@ -44,6 +44,9 @@ class OM_WooCommerce {
 		// ⚡ NEW: Async SMS Sending.
 		add_action( 'om_async_send_sms_job', array( $this, 'process_async_sms_job' ), 10, 4 );
 
+		// Async fetch SMS price.
+		add_action( 'om_async_fetch_sms_price_job', array( $this, 'process_async_fetch_sms_price_job' ) );
+
 		// Built-in short URL redirect listener.
 		add_action( 'init', array( $this, 'handle_short_url_redirect' ) );
 	}
@@ -532,6 +535,56 @@ class OM_WooCommerce {
 	 */
 	public function process_async_sms_job( $phone, $message, $user_id, $order_id ) {
 		OM_Twilio_API::send_sms( $phone, $message, $user_id, $order_id );
+	}
+
+	/**
+	 * Process async SMS price fetching job.
+	 *
+	 * @param string $message_sid The Twilio Message SID.
+	 */
+	public function process_async_fetch_sms_price_job( $message_sid ) {
+		global $wpdb;
+
+		$price = OM_Twilio_API::fetch_message_price( $message_sid );
+
+		if ( false !== $price ) {
+			$table_name = $wpdb->prefix . 'om_sms_history';
+
+			// Update the price in our history table.
+			$wpdb->update(
+				$table_name,
+				array( 'price' => $price ),
+				array( 'message_sid' => $message_sid ),
+				array( '%f' ),
+				array( '%s' )
+			);
+
+			// Retrieve the associated order ID.
+			$order_id = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT order_id FROM {$table_name} WHERE message_sid = %s LIMIT 1",
+					$message_sid
+				)
+			);
+
+			if ( ! empty( $order_id ) ) {
+				// Calculate total cost for the order.
+				$total_cost = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT SUM(price) FROM {$table_name} WHERE order_id = %d",
+						$order_id
+					)
+				);
+
+				if ( ! is_null( $total_cost ) ) {
+					$order = wc_get_order( $order_id );
+					if ( $order ) {
+						$order->update_meta_data( '_om_sms_cost', (float) $total_cost );
+						$order->save_meta_data();
+					}
+				}
+			}
+		}
 	}
 }
 

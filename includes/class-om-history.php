@@ -172,8 +172,9 @@ class OM_History {
 					<th scope="col" class="manage-column column-id" width="5%"><?php esc_html_e( 'ID', 'optimessage' ); ?></th>
 					<th scope="col" class="manage-column" width="15%"><?php esc_html_e( 'Date', 'optimessage' ); ?></th>
 					<th scope="col" class="manage-column" width="15%"><?php esc_html_e( 'To', 'optimessage' ); ?></th>
-					<th scope="col" class="manage-column" width="30%"><?php esc_html_e( 'Message', 'optimessage' ); ?></th>
+					<th scope="col" class="manage-column" width="25%"><?php esc_html_e( 'Message', 'optimessage' ); ?></th>
 					<th scope="col" class="manage-column" width="10%"><?php esc_html_e( 'Status', 'optimessage' ); ?></th>
+					<th scope="col" class="manage-column" width="5%"><?php esc_html_e( 'Cost', 'optimessage' ); ?></th>
 					<th scope="col" class="manage-column" width="10%"><?php esc_html_e( 'Clicks', 'optimessage' ); ?></th>
 					<th scope="col" class="manage-column" width="15%"><?php esc_html_e( 'Error/Details', 'optimessage' ); ?></th>
 				</tr>
@@ -217,6 +218,7 @@ class OM_History {
 							echo '<span style="color:' . esc_attr( $color ) . ';font-weight:bold;">' . esc_html( ucfirst( $row->status ) ) . '</span>';
 							?>
 						</td>
+						<td><?php echo esc_html( isset( $row->price ) && $row->price > 0 ? '$' . number_format( $row->price, 4 ) : '-' ); ?></td>
 						<td>
 							<?php
 							if ( $row->order_id ) {
@@ -237,7 +239,7 @@ class OM_History {
 				<?php endforeach; ?>
 			<?php else : ?>
 				<tr>
-					<td colspan="7"><?php esc_html_e( 'No SMS history found.', 'optimessage' ); ?></td>
+					<td colspan="8"><?php esc_html_e( 'No SMS history found.', 'optimessage' ); ?></td>
 				</tr>
 			<?php endif; ?>
 			</tbody>

@@ -313,4 +313,46 @@ class OM_Twilio_API {
 
 		return false;
 	}
+
+	/**
+	 * Fetch message price from Twilio API.
+	 *
+	 * @param string $message_sid The Twilio Message SID.
+	 * @return float|bool The price of the message or false on failure.
+	 */
+	public static function fetch_message_price( $message_sid ) {
+		$sid   = get_option( 'om_twilio_sid' );
+		$token = get_option( 'om_twilio_token' );
+
+		if ( empty( $sid ) || empty( $token ) || empty( $message_sid ) ) {
+			return false;
+		}
+
+		$url = "https://api.twilio.com/2010-04-01/Accounts/$sid/Messages/$message_sid.json";
+
+		$args = array(
+			'method'  => 'GET',
+			'headers' => array(
+				'Authorization' => 'Basic ' . base64_encode( "$sid:$token" ),
+			),
+			'timeout' => 15,
+		);
+
+		$response = wp_remote_get( $url, $args );
+
+		if ( is_wp_error( $response ) ) {
+			return false;
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body );
+
+		if ( isset( $data->price ) && is_numeric( $data->price ) ) {
+			// Twilio returns negative prices (e.g., -0.0075) to indicate cost. 
+			// We store it as a positive absolute value.
+			return abs( (float) $data->price );
+		}
+
+		return false;
+	}
 }

@@ -132,6 +132,15 @@ class OM_Webhook {
 				array( '%s' ),
 				array( '%s' )
 			);
+
+			// If the message has reached a final state, enqueue a job to fetch its price from Twilio.
+			if ( in_array( $status, array( 'delivered', 'undelivered', 'failed' ), true ) ) {
+				if ( function_exists( 'as_enqueue_async_action' ) ) {
+					as_enqueue_async_action( 'om_async_fetch_sms_price_job', array( $message_sid ) );
+				} else {
+					wp_schedule_single_event( time(), 'om_async_fetch_sms_price_job', array( $message_sid ) );
+				}
+			}
 		}
 
 		// Twilio expects a 200 OK or XML response.

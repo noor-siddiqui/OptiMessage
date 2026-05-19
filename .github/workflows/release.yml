@@ -1,10 +1,12 @@
-name: Generate Plugin Release ZIP
+name: Build and Package Plugin Release
 
+# 1. When should this script run?
+# We only want it to run when you publish a new "Release" on GitHub.
 on:
-  push:
-    tags:
-      - 'v*' # Trigger this workflow when a new tag like "v1.0.0" is pushed
+  release:
+    types: [published]
 
+# 2. What jobs should it perform?
 jobs:
   build:
     name: Build & Attach Release
