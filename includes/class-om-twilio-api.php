@@ -348,7 +348,7 @@ class OM_Twilio_API {
 		$data = json_decode( $body );
 
 		if ( isset( $data->price ) && is_numeric( $data->price ) ) {
-			// Twilio returns negative prices (e.g., -0.0075) to indicate cost. 
+			// Twilio returns negative prices (e.g., -0.0075) to indicate cost.
 			// We store it as a positive absolute value.
 			return abs( (float) $data->price );
 		}

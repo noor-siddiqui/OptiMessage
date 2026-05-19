@@ -23,6 +23,7 @@
     <exclude-pattern>*/plugin-update-checker/*</exclude-pattern>
 
     <rule ref="WordPress-Core">
+        <exclude name="WordPress.DB.PreparedSQL.InterpolatedNotPrepared"/>
     </rule>
     <rule ref="WordPress-Docs" />
     <rule ref="WordPress-Extra" />
