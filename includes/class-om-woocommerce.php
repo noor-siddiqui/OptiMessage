@@ -430,6 +430,10 @@ class OM_WooCommerce {
 			}
 		}
 
+		if ( ! empty( $track_url ) ) {
+			$track_url = html_entity_decode( $track_url );
+		}
+
 		if ( get_option( 'om_shorten_tracking_url', 0 ) && ! empty( $track_url ) ) {
 			$track_url = $this->shorten_url( $track_url, $order );
 		}
@@ -504,15 +508,18 @@ class OM_WooCommerce {
 					}
 
 					if ( ! empty( $track_url ) ) {
-						$expected_hash = substr( wp_hash( $order_id . $track_url ), 0, 5 );
-						if ( hash_equals( $expected_hash, $hash ) ) {
+						$decoded_url           = html_entity_decode( $track_url );
+						$expected_hash_decoded = substr( wp_hash( $order_id . $decoded_url ), 0, 5 );
+						$expected_hash_raw     = substr( wp_hash( $order_id . $track_url ), 0, 5 );
+
+						if ( hash_equals( $expected_hash_decoded, $hash ) || hash_equals( $expected_hash_raw, $hash ) ) {
 							// Record click analytics.
 							$clicks = (int) $order->get_meta( '_om_short_url_clicks', true );
 							$order->update_meta_data( '_om_short_url_clicks', $clicks + 1 );
 							$order->save_meta_data();
 
 							// phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
-							wp_redirect( esc_url_raw( $track_url ) );
+							wp_redirect( esc_url_raw( $decoded_url ) );
 							exit;
 						}
 					}
