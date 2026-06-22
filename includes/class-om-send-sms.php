@@ -153,15 +153,27 @@ class OM_Send_SMS {
 			);
 
 			if ( $orders ) {
-				// Pre-load user meta cache to avoid N+1 queries during the loop.
+				// Pre-load specific user meta to avoid N+1 queries and memory bloat during the loop.
 				$customer_ids = array();
 				foreach ( $orders as $order ) {
 					if ( $order->get_customer_id() ) {
 						$customer_ids[] = $order->get_customer_id();
 					}
 				}
+
+				$user_consents = array();
 				if ( ! empty( $customer_ids ) ) {
-					update_meta_cache( 'user', array_unique( $customer_ids ) );
+					global $wpdb;
+					$unique_ids = array_unique( $customer_ids );
+					$ids_csv    = implode( ',', array_map( 'intval', $unique_ids ) );
+
+					// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+					$results = $wpdb->get_results( "SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = 'optimessage/sms-consent' AND user_id IN ($ids_csv)" );
+					// phpcs:enable
+
+					foreach ( $results as $row ) {
+						$user_consents[ $row->user_id ] = $row->meta_value;
+					}
 				}
 
 				foreach ( $orders as $order ) {
@@ -192,8 +204,8 @@ class OM_Send_SMS {
 							$has_consent = false;
 						} else {
 							$customer_id = $order->get_customer_id();
-							if ( $customer_id ) {
-								$user_consent = get_user_meta( $customer_id, 'optimessage/sms-consent', true );
+							if ( $customer_id && isset( $user_consents[ $customer_id ] ) ) {
+								$user_consent = $user_consents[ $customer_id ];
 								if ( ! empty( $user_consent ) && ( '1' === $user_consent || 'yes' === strtolower( $user_consent ) || 'on' === strtolower( $user_consent ) || 'true' === strtolower( $user_consent ) ) ) {
 										$has_consent = true;
 								}
