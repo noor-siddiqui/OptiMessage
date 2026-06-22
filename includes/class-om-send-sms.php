@@ -404,18 +404,34 @@ class OM_Send_SMS {
 			fclose( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		}
 
-		// Validate each number via Twilio Lookup API.
+		// ⚡ Bolt Performance Optimization:
+		// Replaced synchronous loop of OM_Twilio_API::lookup_phone() with chunked lookup_phone_batch() calls.
+		// This leverages curl_multi_init for concurrent API requests, significantly reducing network bottleneck
+		// and preventing PHP process timeouts during bulk CSV processing.
 		$valid_phones   = array();
 		$invalid_phones = array();
 
+		$lookup_requests = array();
 		foreach ( $raw_phones as $phone => $user_id ) {
-			$result = OM_Twilio_API::lookup_phone( $phone );
+			$lookup_requests[ $phone ] = array(
+				'phone' => $phone,
+			);
+		}
 
-			if ( is_array( $result ) && ! empty( $result['valid'] ) ) {
-				// Use the E.164 formatted number from Twilio.
-				$valid_phones[ $result['formatted'] ] = $user_id;
-			} else {
-				$invalid_phones[] = $phone;
+		$chunks = array_chunk( $lookup_requests, 50, true );
+
+		foreach ( $chunks as $chunk ) {
+			$results = OM_Twilio_API::lookup_phone_batch( $chunk );
+
+			foreach ( $chunk as $phone => $req ) {
+				$result = isset( $results[ $phone ] ) ? $results[ $phone ] : false;
+
+				if ( is_array( $result ) && ! empty( $result['valid'] ) ) {
+					// Use the E.164 formatted number from Twilio.
+					$valid_phones[ $result['formatted'] ] = $raw_phones[ $phone ];
+				} else {
+					$invalid_phones[] = $phone;
+				}
 			}
 		}
 
