@@ -153,19 +153,41 @@ class OM_Send_SMS {
 			);
 
 			if ( $orders ) {
-				// Pre-load user meta cache to avoid N+1 queries during the loop.
+				global $wpdb;
+				$user_consents = array();
+
+				// Extract unique customer IDs.
 				$customer_ids = array();
 				foreach ( $orders as $order ) {
-					if ( $order->get_customer_id() ) {
-						$customer_ids[] = $order->get_customer_id();
+					$cid = $order->get_customer_id();
+					if ( $cid ) {
+						$customer_ids[] = $cid;
 					}
 				}
-				if ( ! empty( $customer_ids ) ) {
-					update_meta_cache( 'user', array_unique( $customer_ids ) );
+
+				$unique_customer_ids = array_unique( $customer_ids );
+
+				// Targeted query to avoid the memory bloat of update_meta_cache on all user meta fields.
+				if ( ! empty( $unique_customer_ids ) ) {
+					$in_clause = implode( ',', array_map( 'intval', $unique_customer_ids ) );
+
+					// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
+					// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
+					$results = $wpdb->get_results(
+						"SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = 'optimessage/sms-consent' AND user_id IN ({$in_clause})"
+					);
+					// phpcs:enable
+
+					if ( is_array( $results ) ) {
+						foreach ( $results as $row ) {
+							$user_consents[ $row->user_id ] = $row->meta_value;
+						}
+					}
 				}
 
 				foreach ( $orders as $order ) {
-								$phone = $order->get_billing_phone();
+					$phone = $order->get_billing_phone();
 					if ( empty( $phone ) ) {
 						continue;
 					}
@@ -192,8 +214,8 @@ class OM_Send_SMS {
 							$has_consent = false;
 						} else {
 							$customer_id = $order->get_customer_id();
-							if ( $customer_id ) {
-								$user_consent = get_user_meta( $customer_id, 'optimessage/sms-consent', true );
+							if ( $customer_id && isset( $user_consents[ $customer_id ] ) ) {
+								$user_consent = $user_consents[ $customer_id ];
 								if ( ! empty( $user_consent ) && ( '1' === $user_consent || 'yes' === strtolower( $user_consent ) || 'on' === strtolower( $user_consent ) || 'true' === strtolower( $user_consent ) ) ) {
 										$has_consent = true;
 								}
