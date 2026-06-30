@@ -160,8 +160,21 @@ class OM_Send_SMS {
 						$customer_ids[] = $order->get_customer_id();
 					}
 				}
+				$consent_map = array();
 				if ( ! empty( $customer_ids ) ) {
-					update_meta_cache( 'user', array_unique( $customer_ids ) );
+					global $wpdb;
+					$unique_ids = array_unique( $customer_ids );
+					// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery
+					// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+					$ids_string = implode( ',', array_map( 'intval', $unique_ids ) );
+					$results    = $wpdb->get_results(
+						"SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = 'optimessage/sms-consent' AND user_id IN ({$ids_string})"
+					);
+					// phpcs:enable
+
+					foreach ( $results as $row ) {
+						$consent_map[ $row->user_id ] = $row->meta_value;
+					}
 				}
 
 				foreach ( $orders as $order ) {
@@ -193,7 +206,7 @@ class OM_Send_SMS {
 						} else {
 							$customer_id = $order->get_customer_id();
 							if ( $customer_id ) {
-								$user_consent = get_user_meta( $customer_id, 'optimessage/sms-consent', true );
+								$user_consent = isset( $consent_map[ $customer_id ] ) ? $consent_map[ $customer_id ] : '';
 								if ( ! empty( $user_consent ) && ( '1' === $user_consent || 'yes' === strtolower( $user_consent ) || 'on' === strtolower( $user_consent ) || 'true' === strtolower( $user_consent ) ) ) {
 										$has_consent = true;
 								}
